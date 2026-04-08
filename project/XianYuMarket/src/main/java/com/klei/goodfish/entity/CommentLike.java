@@ -1,4 +1,4 @@
-package entity;
+package com.klei.goodfish.entity;
 
 import lombok.Data;
 
@@ -8,11 +8,9 @@ import java.time.LocalDateTime;
  * @author klei
  */
 @Data
-public class Comment {
+public class CommentLike {
     private Integer id;
-    private Integer goodId;
+    private Integer commentId;
     private Integer userId;
-    private String content;
-    private Integer status;
     private LocalDateTime createdTime;
 }

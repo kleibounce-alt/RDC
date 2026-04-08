@@ -109,7 +109,7 @@
       - 
       ```
 
-      **标签字典：(AI推荐)**
+      **标签字典**
 
     - ```sql
       - id INT PRIMARY KEY
@@ -118,7 +118,7 @@
 
       
 
-  - **good_tag表(AI推荐)**
+  - **good_tag表**
 
     - ```sql
       - id INT PRIMARY KEY
@@ -181,3 +181,118 @@
 - #### 创建实体类：
 
   - 由于不能用框架，驼峰映射不能添加依赖。但在写dao的时候多加一行就解决了
+  - entity对应数据库，与bean区分
+
+
+
+---
+
+---
+
+## ==DAY 3==
+
+​		*早上九点半突然惊醒，干脆旷掉离散。下午政策也旷了，故跑到图书馆，晚上决定狠狠地玩洛克王国*
+
+
+
+- #### 初见JDBC
+
+  - **全称：Java Database Connectivity（Java 数据库连接）**
+  - **三个核心对象：**
+    - Connection：连接数据库
+    - Statement：单次发送SQL语句给数据库
+    - ResultSet：查询返回的数据集合
+    - 关系：Connection -> Statement -> ResultSet
+
+
+
+- #### 手写框架方案
+
+  - 方案一：dao接口——dao实现——service
+  - 方案二：mappercore——mapper注解——service
+  - 方案三：基础的增删改查用方案二，留个dao包解决关系复杂的查询语句
+  - 最终选择**方案三**
+
+
+
+- #### mappercore
+
+  - **注解类**
+
+    - ```java
+      @Retention(RetentionPolicy.RUNTIME) //为了让注解能在jvm进程结束前保留
+      ```
+
+      ```java
+      @Target(ElementType.METHOD)  //说明这个注释类要放在'方法'上面
+      ```
+
+    - Insert、Delete、Update、Select都用以上注解，结构都一样
+
+
+
+---
+
+---
+
+## ==DAY 4==
+
+
+
+- #### 生命周期
+
+  - 概念：一个对象从被创建（诞生）到被销毁（死亡）所经历的完整过程
+
+
+
+- #### ResultSet
+
+  - 封装executeQuery(sql);
+  - next()
+    - 返回true，行有效
+    - 返回false，行无效
+  - getXxx
+
+
+
+- #### PreparedStatement
+
+  - 防止sql注入：因为转义
+  - 用conn.prepareStatement(sql);
+  - setXxx
+  - 预编译：先将sql语句传入编译检查语法，再传参数
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

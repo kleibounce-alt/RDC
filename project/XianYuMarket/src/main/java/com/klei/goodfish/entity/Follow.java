@@ -1,4 +1,4 @@
-package entity;
+package com.klei.goodfish.entity;
 
 import lombok.Data;
 
@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
  * @author klei
  */
 @Data
-public class Favorite {
+public class Follow {
     private Integer id;
-    private Integer userId;
-    private Integer goodId;
+    private Integer followerId;
+    private Integer followingId;
     private LocalDateTime createTime;
 }

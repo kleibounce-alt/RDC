@@ -1,4 +1,4 @@
-package entity;
+package com.klei.goodfish.entity;
 
 /**
  * @author klei

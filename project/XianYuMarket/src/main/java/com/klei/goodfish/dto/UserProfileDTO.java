@@ -1,4 +1,4 @@
-package entity;
+package com.klei.goodfish.dto;
 
 import lombok.Data;
 
@@ -9,11 +9,9 @@ import java.time.LocalDateTime;
  * @author klei
  */
 @Data
-public class User {
-    private Integer id;
+public class UserProfileDTO {
+    private Integer userId;
     private String userName;
-    private String password;
-    private String avatar;
     private Integer role;
     private Integer status;
     private BigDecimal wallet;
