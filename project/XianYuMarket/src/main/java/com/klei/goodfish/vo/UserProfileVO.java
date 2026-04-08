@@ -1,4 +1,4 @@
-package com.klei.goodfish.dto;
+package com.klei.goodfish.vo;
 
 import lombok.Data;
 
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * @author klei
  */
 @Data
-public class UserProfileDTO {
+public class UserProfileVO {
     private Integer userId;
     private String userName;
     private Integer role;

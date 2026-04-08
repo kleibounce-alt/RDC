@@ -1,14 +1,12 @@
 package com.klei.goodfish.dto;
 
-import com.klei.goodfish.entity.User;
-import com.klei.goodfish.vo.UserFavoriteVO;
-import com.klei.goodfish.vo.UserGoodVO;
+import com.klei.goodfish.entity.Good;
 import lombok.Data;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 public class UserGoodDTO {
-    private Integer userId;
-    private List<UserGoodVO> goods;
+    private Good good;
+    private LocalDateTime releaseTime;
 }

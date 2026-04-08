@@ -1,14 +1,15 @@
 package com.klei.goodfish.vo;
 
-import com.klei.goodfish.entity.Favorite;
-import com.klei.goodfish.entity.Good;
+import com.klei.goodfish.dto.UserFavoriteDTO;
 import lombok.Data;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * @author klei
+ */
 @Data
 public class UserFavoriteVO {
-    private Good good;
-    private LocalDateTime favoriteTime;
+    private Integer userId;
+    private List<UserFavoriteDTO> favorites;
 }

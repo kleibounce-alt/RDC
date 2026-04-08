@@ -1,9 +1,8 @@
 package com.klei.goodfish.service.impl;
 
-import com.klei.goodfish.dto.UserFavoriteDTO;
-import com.klei.goodfish.dto.UserFollowDTO;
-import com.klei.goodfish.dto.UserGoodDTO;
-import com.klei.goodfish.dto.UserProfileDTO;
+import com.klei.goodfish.dto.*;
+import com.klei.goodfish.mappercore.Insert;
+import com.klei.goodfish.vo.*;
 import com.klei.goodfish.entity.Favorite;
 import com.klei.goodfish.entity.Follow;
 import com.klei.goodfish.entity.Good;
@@ -14,10 +13,9 @@ import com.klei.goodfish.mapper.GoodMapper;
 import com.klei.goodfish.mapper.UserMapper;
 import com.klei.goodfish.mappercore.proxy.MapperProxy;
 import com.klei.goodfish.service.UserService;
-import com.klei.goodfish.vo.UserFavoriteVO;
-import com.klei.goodfish.vo.UserFollowVO;
-import com.klei.goodfish.vo.UserGoodVO;
+import org.mindrot.jbcrypt.BCrypt;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,94 +33,149 @@ public class UserServiceImpl implements UserService {
 
     private FollowMapper followMapper = MapperProxy.getMapper(FollowMapper.class);
 
+
+    @Override
+    //注册
+    public UserRegisterVO register (UserRegisterDTO dto) {
+        String error = dto.validate();
+        if (error != null) {
+            return UserRegisterVO.fail(error);
+        }
+        UserRegisterVO vo = new UserRegisterVO();
+
+        User user = userMapper.findByName(dto.getUserName());
+        if (user != null) {
+            return UserRegisterVO.fail("用户名重复！");
+        }
+
+        user.setUserName(dto.getUserName());
+        //加密
+        user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
+        user.setAvatar("");
+        user.setRole(dto.getRole());
+        user.setStatus(1);
+        user.setWallet(BigDecimal.ZERO);
+        user.setCreateTime(LocalDateTime.now());
+
+        userMapper.insert(
+                user.getUserName(),
+                user.getPassword(),
+                user.getRole(),
+                user.getStatus(),
+                user.getWallet(),
+                user.getCreateTime(),
+                user.getAvatar()
+        );
+
+        User savedUser = userMapper.findByName(dto.getUserName());
+
+        return UserRegisterVO.success(savedUser);
+    }
+
+    //登录
+    @Override
+    public UserLoginVO login(UserLoginDTO dto) {
+        String userName = dto.getUserName();
+        User user = userMapper.findByName(userName);
+        if (user == null) {
+            return UserLoginVO.fail("用户名或密码错误！");
+        }
+        String password = dto.getPassword();
+        boolean check = BCrypt.checkpw(password, user.getPassword());
+        if (!check) {
+            return UserLoginVO.fail("用户名或密码错误！");
+        }
+        return UserLoginVO.success(user);
+    }
+
     @Override
     //查看个人信息
-    public UserProfileDTO getUser (Integer userId) {
+    public UserProfileVO getUser (Integer userId) {
         User user = userMapper.findById(userId);
 
         if (user == null) {
             return null;
         }
 
-        UserProfileDTO dto = new UserProfileDTO();
-        dto.setUserId(user.getId());
-        dto.setUserName(user.getUserName());
-        dto.setRole(user.getRole());
-        dto.setStatus(user.getStatus());
-        dto.setWallet(user.getWallet());
-        dto.setCreateTime(user.getCreateTime());
-
-        return dto;
+        UserProfileVO vo = new UserProfileVO();
+        vo.setUserId(user.getId());
+        vo.setUserName(user.getUserName());
+        vo.setRole(user.getRole());
+        vo.setStatus(user.getStatus());
+        vo.setWallet(user.getWallet());
+        vo.setCreateTime(user.getCreateTime());
+        return vo;
     }
 
     @Override
     //查看个人收藏
-    public UserFavoriteDTO getUserFavorite (Integer userId) {
+    public UserFavoriteVO getUserFavorite (Integer userId) {
         List<Favorite> favoriteList = favoriteMapper.findByUserId(userId);
         if (favoriteList == null || favoriteList.isEmpty()) {
             return null;
         }
 
 
-        UserFavoriteDTO dto = new UserFavoriteDTO();
+        UserFavoriteVO vo = new UserFavoriteVO();
 
-        List<UserFavoriteVO> voList = new ArrayList<>();
+        List<UserFavoriteDTO> dtoList = new ArrayList<>();
         for (Favorite favorite : favoriteList) {
-            UserFavoriteVO vo = new UserFavoriteVO();
+            UserFavoriteDTO dto = new UserFavoriteDTO();
             Good good = goodMapper.findById(favorite.getGoodId());
-            vo.setGood(good);
-            vo.setFavoriteTime(favorite.getCreateTime());
-            voList.add(vo);
+            dto.setGood(good);
+            dto.setFavoriteTime(favorite.getCreateTime());
+            dtoList.add(dto);
         }
 
-        dto.setUserId(userId);
-        dto.setFavorites(voList);
-        return dto;
+        vo.setUserId(userId);
+        vo.setFavorites(dtoList);
+        return vo;
     }
 
     //查看我的关注
     @Override
-    public UserFollowDTO getUserFollow (Integer userId) {
+    public UserFollowVO getUserFollow (Integer userId) {
         List<Follow> followList = followMapper.findByUserId(userId);
         if (followList == null || followList.isEmpty()) {
             return null;
         }
 
-        UserFollowDTO dto = new UserFollowDTO();
-        List<UserFollowVO> voList = new ArrayList<>();
+        UserFollowVO vo = new UserFollowVO();
+        List<UserFollowDTO> dtoList = new ArrayList<>();
         for (Follow follow : followList) {
-            UserFollowVO vo = new UserFollowVO();
+            UserFollowDTO dto = new UserFollowDTO();
             User user = userMapper.findById(follow.getFollowingId());
-            vo.setFollowingUser(user);
-            vo.setFollowTime(follow.getCreateTime());
-            voList.add(vo);
+            dto.setFollowingUser(user);
+            dto.setFollowTime(follow.getCreateTime());
+            dtoList.add(dto);
         }
-        dto.setUserId(userId);
-        dto.setFollowings(voList);
-        return dto;
+        vo.setUserId(userId);
+        vo.setFollowings(dtoList);
+        return vo;
     }
 
     //查看我发布的商品
     @Override
-    public UserGoodDTO getUserGood (Integer userId) {
+    public UserGoodVO getUserGood (Integer userId) {
         List<Good> goodList = goodMapper.findBySellerId(userId);
 
         if (goodList == null || goodList.isEmpty()) {
             return null;
         }
 
-        UserGoodDTO dto = new UserGoodDTO();
-        List<UserGoodVO> voList = new ArrayList<>();
+        UserGoodVO vo = new UserGoodVO();
+        List<UserGoodDTO> dtoList = new ArrayList<>();
         for (Good good : goodList) {
-            UserGoodVO vo = new UserGoodVO();
-            vo.setGood(good);
-            vo.setReleaseTime(good.getCreateTime());
-            voList.add(vo);
+            UserGoodDTO dto = new UserGoodDTO();
+            dto.setGood(good);
+            dto.setReleaseTime(good.getCreateTime());
+            dtoList.add(dto);
         }
-        dto.setUserId(userId);
-        dto.setGoods(voList);
-        return dto;
+        vo.setUserId(userId);
+        vo.setGoods(dtoList);
+        return vo;
     }
 
+    
 
 }

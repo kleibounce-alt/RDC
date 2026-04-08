@@ -1,10 +1,9 @@
 package com.klei.goodfish.service;
 
 import com.klei.goodfish.dto.UserFavoriteDTO;
-import com.klei.goodfish.dto.UserFollowDTO;
-import com.klei.goodfish.dto.UserGoodDTO;
-import com.klei.goodfish.dto.UserProfileDTO;
-import com.klei.goodfish.entity.User;
+import com.klei.goodfish.dto.UserLoginDTO;
+import com.klei.goodfish.dto.UserRegisterDTO;
+import com.klei.goodfish.vo.*;
 
 /**
  * @author klei
@@ -12,17 +11,20 @@ import com.klei.goodfish.entity.User;
 public interface UserService {
 
     //注册
+    UserRegisterVO register(UserRegisterDTO dto);
 
+    //登录
+    UserLoginVO login(UserLoginDTO dto);
 
     //查看个人信息
-    UserProfileDTO getUser (Integer userId);
+    UserProfileVO getUser (Integer userId);
 
     //查看个人收藏
-    UserFavoriteDTO getUserFavorite (Integer userId);
+    UserFavoriteVO getUserFavorite (Integer userId);
 
     //查看个人关注
-    UserFollowDTO getUserFollow (Integer userId);
+    UserFollowVO getUserFollow (Integer userId);
 
     //查看我发布的商品
-    UserGoodDTO getUserGood (Integer userId);
+    UserGoodVO getUserGood (Integer userId);
 }
