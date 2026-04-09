@@ -73,3 +73,26 @@ CREATE TABLE comment_like (
         create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(comment_id, user_id)
 ) ;
+
+-- 订单表
+CREATE TABLE `order` (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        good_id INT NOT NULL,
+        buyer_id INT NOT NULL,
+        seller_id INT NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        status TINYINT DEFAULT 0 COMMENT '0待确认 1已完成 2已取消',
+        create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 钱包流水表
+CREATE TABLE wallet_log (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL COMMENT '正数充值，负数消费',
+        balance_before DECIMAL(10, 2) NOT NULL,
+        balance_after DECIMAL(10, 2) NOT NULL,
+        type TINYINT NOT NULL COMMENT '1充值 2购买 3收入',
+        related_id INT DEFAULT NULL COMMENT '关联订单ID',
+        create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

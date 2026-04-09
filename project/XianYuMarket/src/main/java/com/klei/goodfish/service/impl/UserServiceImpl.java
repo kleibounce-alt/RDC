@@ -35,21 +35,21 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    //注册
+//注册
     public UserRegisterVO register (UserRegisterDTO dto) {
         String error = dto.validate();
         if (error != null) {
             return UserRegisterVO.fail(error);
         }
-        UserRegisterVO vo = new UserRegisterVO();
 
-        User user = userMapper.findByName(dto.getUserName());
-        if (user != null) {
-            return UserRegisterVO.fail("用户名重复！");
+        User existUser = userMapper.findByName(dto.getUserName());
+        if (existUser != null) {
+            return UserRegisterVO.fail("用户名已存在！");
         }
 
+        User user = new User();
         user.setUserName(dto.getUserName());
-        //加密
+        // BCrypt 加密密码验证
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setAvatar("");
         user.setRole(dto.getRole());
@@ -57,6 +57,7 @@ public class UserServiceImpl implements UserService {
         user.setWallet(BigDecimal.ZERO);
         user.setCreateTime(LocalDateTime.now());
 
+        // 插入数据库
         userMapper.insert(
                 user.getUserName(),
                 user.getPassword(),
@@ -68,6 +69,9 @@ public class UserServiceImpl implements UserService {
         );
 
         User savedUser = userMapper.findByName(dto.getUserName());
+        if (savedUser == null) {
+            return UserRegisterVO.fail("注册失败，请重试");
+        }
 
         return UserRegisterVO.success(savedUser);
     }
@@ -176,6 +180,6 @@ public class UserServiceImpl implements UserService {
         return vo;
     }
 
-    
+
 
 }
