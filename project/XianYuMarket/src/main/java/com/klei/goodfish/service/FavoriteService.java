@@ -21,5 +21,6 @@ public interface FavoriteService {
     // 获取用户收藏总数
     int getFavoriteCount(Integer userId);
 
-    
+    // 查某个用户的所有收藏
+    List<Favorite> getUserFavorites(Integer userId);
 }

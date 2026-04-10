@@ -9,6 +9,8 @@ import com.klei.goodfish.mappercore.proxy.MapperProxy;
 import com.klei.goodfish.service.FavoriteService;
 import com.klei.goodfish.util.BusinessException;
 
+import java.util.List;
+
 /**
  * @author klei
  */
@@ -69,5 +71,15 @@ public class FavoriteServiceImpl implements FavoriteService {
     // 获取用户收藏总数
     public int getFavoriteCount(Integer userId) {
         return favoriteMapper.countByUserId(userId);
+    }
+
+
+    @Override
+    // 查某个用户的所有收藏
+    public List<Favorite> getUserFavorites(Integer userId) {
+        if (userId == null) {
+            throw new BusinessException(400, "用户ID不能为空");
+        }
+        return favoriteMapper.findByUserId(userId);
     }
 }
