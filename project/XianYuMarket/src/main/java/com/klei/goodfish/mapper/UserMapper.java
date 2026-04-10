@@ -2,6 +2,7 @@ package com.klei.goodfish.mapper;
 import com.klei.goodfish.mappercore.Insert;
 import com.klei.goodfish.mappercore.Select;
 import com.klei.goodfish.entity.User;
+import com.klei.goodfish.mappercore.Update;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,9 @@ public interface UserMapper {
             "VALUES(?, ?, ?, ?, ?, ?, ?)")
     void insert(String userName, String password, int role, int status,
                 BigDecimal wallet, LocalDateTime createTime, String avatar);
+
+    @Update("UPDATE user SET wallet = ? WHERE id = ?")
+    void updateWallet(BigDecimal newBalance, Integer userId);
 
 }
 
