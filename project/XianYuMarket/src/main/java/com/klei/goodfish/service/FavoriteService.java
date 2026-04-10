@@ -1,6 +1,8 @@
 package com.klei.goodfish.service;
 
 import com.klei.goodfish.dto.FavoriteAddDTO;
+import com.klei.goodfish.entity.Favorite;
+
 import java.util.List;
 
 /**
@@ -18,4 +20,6 @@ public interface FavoriteService {
 
     // 获取用户收藏总数
     int getFavoriteCount(Integer userId);
+
+    
 }

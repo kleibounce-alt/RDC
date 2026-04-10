@@ -139,7 +139,7 @@ public class UserServiceImpl implements UserService {
     //查看我的关注
     @Override
     public UserFollowVO getUserFollow (Integer userId) {
-        List<Follow> followList = followMapper.findByUserId(userId);
+        List<Follow> followList = followMapper.findByFollowerId(userId);
         if (followList == null || followList.isEmpty()) {
             return null;
         }
