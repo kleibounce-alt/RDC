@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author klei
+ */
 public class WalletServiceImpl implements WalletService {
 
     private WalletLogMapper walletLogMapper = MapperProxy.getMapper(WalletLogMapper.class);
@@ -76,11 +79,8 @@ public class WalletServiceImpl implements WalletService {
         // 更新余额
         userMapper.updateWallet(after, dto.getUserId());
 
-        // 记录流水（type=2 购买，负数表示支出）
-        // 注意：amount 存负数还是正数？建议存实际变动值（负数），但balance_before/after正常记录
-        // 或者存正数，用type区分。这里存负数表示支出，更直观
         walletLogMapper.insert(dto.getUserId(),
-                dto.getAmount().negate(), // 转为负数表示支出
+                dto.getAmount().negate(),
                 before,
                 after,
                 2,
@@ -104,10 +104,8 @@ public class WalletServiceImpl implements WalletService {
         vo.setUserId(userId);
         vo.setBalance(user.getWallet());
 
-        // 可选：统计累计充值和消费（查流水表汇总，数据量大时建议单独字段存储，这里简单查）
-        // 暂时只返回当前余额，统计功能可后续扩展
         vo.setTotalRecharge(BigDecimal.ZERO);
-        vo.setTotalSpend(BigDecimal.ZERO);   
+        vo.setTotalSpend(BigDecimal.ZERO);
 
         return vo;
     }
@@ -156,5 +154,29 @@ public class WalletServiceImpl implements WalletService {
             voList.add(vo);
         }
         return voList;
+    }
+
+    @Override
+    public boolean income(Integer sellerId, BigDecimal amount, Integer orderId, String remark) {
+        if (sellerId == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(400, "参数错误，金额必须大于0");
+        }
+
+        // 查询卖家
+        User seller = userMapper.findById(sellerId);
+        if (seller == null) {
+            throw new BusinessException(404, "卖家不存在");
+        }
+
+        BigDecimal before = seller.getWallet();
+        BigDecimal after = before.add(amount);
+
+        // 更新余额
+        userMapper.updateWallet(after, sellerId);
+
+        // 记录流水（type=3 收入）
+        walletLogMapper.insert(sellerId, amount, before, after, 3, orderId);
+
+        return true;
     }
 }

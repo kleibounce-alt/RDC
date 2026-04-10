@@ -14,7 +14,6 @@ public class ResultUtil<T> {
 
     private static final Gson gson = new Gson();
 
-    // 私有构造，强制用静态方法创建
     private ResultUtil() {}
 
     /**
@@ -73,7 +72,7 @@ public class ResultUtil<T> {
     }
 
     /**
-     * 转成 JSON 字符串（给 Servlet 用）
+     * 转成 JSON 字符串
      */
     public String toJson() {
         return gson.toJson(this);

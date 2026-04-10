@@ -2,6 +2,7 @@ package com.klei.goodfish.entity;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -12,7 +13,7 @@ public class Good {
     private Integer id;
     private String goodName;
     private String goodImage;
-    private String goodPrice;
+    private BigDecimal goodPrice;
     private String description;
     private Integer status;
     private Integer sellerId;

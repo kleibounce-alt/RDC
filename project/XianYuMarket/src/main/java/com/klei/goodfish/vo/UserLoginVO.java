@@ -1,10 +1,12 @@
 package com.klei.goodfish.vo;
 
 import com.klei.goodfish.entity.User;
+import lombok.Data;
 
 /**
  * @author klei
  */
+@Data
 public class UserLoginVO {
     private Integer userId;
     private String userName;

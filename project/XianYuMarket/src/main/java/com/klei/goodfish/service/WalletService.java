@@ -4,6 +4,8 @@ import com.klei.goodfish.dto.WalletPayDTO;
 import com.klei.goodfish.dto.WalletRechargeDTO;
 import com.klei.goodfish.vo.WalletBalanceVO;
 import com.klei.goodfish.vo.WalletLogVO;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -25,4 +27,6 @@ public interface WalletService {
 
     // 查询特定类型流水（1充值 2购买 3收入）
     List<WalletLogVO> getWalletLogsByType(Integer userId, Integer type);
+
+    boolean income(Integer sellerId, BigDecimal amount, Integer orderId, String remark);
 }
