@@ -131,4 +131,10 @@ public class CommentServiceImpl implements CommentService {
         vo.setLikeCount(0);
         return vo;
     }
+
+    @Override
+    // 获取商品评论总数
+    public int getCommentCount(Integer goodId) {
+        return commentMapper.countByGoodId(goodId);
+    }
 }

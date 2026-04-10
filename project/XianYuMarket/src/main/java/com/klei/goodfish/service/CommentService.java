@@ -16,4 +16,7 @@ public interface CommentService {
 
     // 查商品的所有评论
     List<CommentVO> getCommentsByGoodId(Integer goodId);
+
+    // 获取商品评论总数
+    int getCommentCount(Integer goodId);
 }
