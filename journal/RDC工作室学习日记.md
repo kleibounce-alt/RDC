@@ -264,9 +264,91 @@
 
 
 
+---
+
+---
+
+## ==DAY 5==
 
 
 
+**所有 Servlet 都遵循这 6 步标准流程：**
+
+### 第 1 步：接收请求
+
+```java
+@WebServlet("/xxx")  // 定义 URL 地址
+public class XxxServlet extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+        // 处理 POST 请求
+    }
+}
+```
+
+### 第 2 步：设置编码（防止中文乱码）
+
+```java
+req.setCharacterEncoding("UTF-8");        // 接收的中文不乱码
+resp.setContentType("application/json;charset=UTF-8");  // 返回的中文不乱码
+```
+
+### 第 3 步：获取参数（两种来源）
+
+- **GET 请求**：从 URL 取（如 `?id=1`）
+
+  
+
+  ```java
+  String id = req.getParameter("id");
+  ```
+
+  
+
+- **POST 请求**：从请求体读 JSON（如 `{"userName":"klei"}`）
+
+  
+
+  ```java
+  BufferedReader reader = req.getReader();  // 读取请求体中的 JSON 字符串
+  UserDTO dto = gson.fromJson(json, UserDTO.class);  // JSON 转 Java 对象
+  ```
+
+  
+
+### 第 4 步：获取登录用户（从 Session）
+
+
+
+```java
+HttpSession session = req.getSession();
+Integer userId = (Integer) session.getAttribute("userId");  // 获取当前登录用户ID
+```
+
+**注意**：注册/登录/白名单接口（如查商品详情）不需要这步，其他都需要。
+
+### 第 5 步：调用 Service 执行业务
+
+
+
+```java
+// 调用你之前写的 Service 方法
+UserVO vo = userService.register(dto);  // 或 goodService.publish(dto) 等
+```
+
+### 第 6 步：包装结果并返回（统一 JSON 格式）
+
+
+
+```java
+// 成功：统一格式 {code:200, success:true, message:"xxx", data:{...}}
+out.print(ResultUtil.success("操作成功", vo).toJson());
+
+// 失败：捕获异常，返回 {code:400, success:false, message:"错误原因"}
+} catch (BusinessException e) {
+    out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
+}
+```
 
 
 
