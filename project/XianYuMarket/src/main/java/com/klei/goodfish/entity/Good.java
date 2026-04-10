@@ -14,7 +14,7 @@ public class Good {
     private String goodImage;
     private String goodPrice;
     private String description;
-    private String status;
+    private Integer status;
     private Integer sellerId;
     private String sellingStatus;
     private LocalDateTime createTime;

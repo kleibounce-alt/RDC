@@ -12,5 +12,5 @@ public class CommentLike {
     private Integer id;
     private Integer commentId;
     private Integer userId;
-    private LocalDateTime createdTime;
+    private LocalDateTime createTime;
 }
