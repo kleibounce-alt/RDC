@@ -35,4 +35,7 @@ public interface GoodService {
 
     // 更新状态
     boolean updateSellingStatus(Integer goodId, String status, Integer userId);
+
+    //查询卖家商品列表
+    List<Good> getGoodsBySellerId(Integer sellerId);
 }

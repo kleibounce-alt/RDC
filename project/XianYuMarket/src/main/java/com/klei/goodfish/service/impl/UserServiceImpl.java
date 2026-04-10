@@ -1,18 +1,17 @@
 package com.klei.goodfish.service.impl;
 
 import com.klei.goodfish.dto.*;
-import com.klei.goodfish.mappercore.Insert;
-import com.klei.goodfish.vo.*;
 import com.klei.goodfish.entity.Favorite;
 import com.klei.goodfish.entity.Follow;
 import com.klei.goodfish.entity.Good;
 import com.klei.goodfish.entity.User;
-import com.klei.goodfish.mapper.FavoriteMapper;
-import com.klei.goodfish.mapper.FollowMapper;
-import com.klei.goodfish.mapper.GoodMapper;
 import com.klei.goodfish.mapper.UserMapper;
 import com.klei.goodfish.mappercore.proxy.MapperProxy;
+import com.klei.goodfish.service.FavoriteService;
+import com.klei.goodfish.service.FollowService;
+import com.klei.goodfish.service.GoodService;
 import com.klei.goodfish.service.UserService;
+import com.klei.goodfish.vo.*;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.math.BigDecimal;
@@ -27,29 +26,26 @@ public class UserServiceImpl implements UserService {
 
     private UserMapper userMapper = MapperProxy.getMapper(UserMapper.class);
 
-    private FavoriteMapper favoriteMapper = MapperProxy.getMapper(FavoriteMapper.class);
-
-    private GoodMapper goodMapper = MapperProxy.getMapper(GoodMapper.class);
-
-    private FollowMapper followMapper = MapperProxy.getMapper(FollowMapper.class);
-
+    private FavoriteService favoriteService = new FavoriteServiceImpl();
+    private FollowService followService = new FollowServiceImpl();
+    private GoodService goodService = new GoodServiceImpl();
 
     @Override
-//注册
+    //注册
     public UserRegisterVO register (UserRegisterDTO dto) {
         String error = dto.validate();
         if (error != null) {
             return UserRegisterVO.fail(error);
         }
 
-        User existUser = userMapper.findByName(dto.getUserName());
-        if (existUser != null) {
-            return UserRegisterVO.fail("用户名已存在！");
+        User user = userMapper.findByName(dto.getUserName());
+        if (user != null) {
+            return UserRegisterVO.fail("用户名重复！");
         }
 
-        User user = new User();
+        user = new User();
         user.setUserName(dto.getUserName());
-        // BCrypt 加密密码验证
+        //加密
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setAvatar("");
         user.setRole(dto.getRole());
@@ -57,7 +53,6 @@ public class UserServiceImpl implements UserService {
         user.setWallet(BigDecimal.ZERO);
         user.setCreateTime(LocalDateTime.now());
 
-        // 插入数据库
         userMapper.insert(
                 user.getUserName(),
                 user.getPassword(),
@@ -69,9 +64,6 @@ public class UserServiceImpl implements UserService {
         );
 
         User savedUser = userMapper.findByName(dto.getUserName());
-        if (savedUser == null) {
-            return UserRegisterVO.fail("注册失败，请重试");
-        }
 
         return UserRegisterVO.success(savedUser);
     }
@@ -114,19 +106,18 @@ public class UserServiceImpl implements UserService {
     @Override
     //查看个人收藏
     public UserFavoriteVO getUserFavorite (Integer userId) {
-        List<Favorite> favoriteList = favoriteMapper.findByUserId(userId);
+        List<Favorite> favoriteList = favoriteService.getUserFavorites(userId);
         if (favoriteList == null || favoriteList.isEmpty()) {
             return null;
         }
 
-
         UserFavoriteVO vo = new UserFavoriteVO();
-
         List<UserFavoriteDTO> dtoList = new ArrayList<>();
+
         for (Favorite favorite : favoriteList) {
             UserFavoriteDTO dto = new UserFavoriteDTO();
-            Good good = goodMapper.findById(favorite.getGoodId());
-            dto.setGood(good);
+            // 查商品详情
+            Good good = goodService.getGoodDetail(favorite.getGoodId());
             dto.setFavoriteTime(favorite.getCreateTime());
             dtoList.add(dto);
         }
@@ -139,15 +130,17 @@ public class UserServiceImpl implements UserService {
     //查看我的关注
     @Override
     public UserFollowVO getUserFollow (Integer userId) {
-        List<Follow> followList = followMapper.findByFollowerId(userId);
+        List<Follow> followList = followService.getUserFollows(userId);
         if (followList == null || followList.isEmpty()) {
             return null;
         }
 
         UserFollowVO vo = new UserFollowVO();
         List<UserFollowDTO> dtoList = new ArrayList<>();
+
         for (Follow follow : followList) {
             UserFollowDTO dto = new UserFollowDTO();
+            // 查被关注者用户信息
             User user = userMapper.findById(follow.getFollowingId());
             dto.setFollowingUser(user);
             dto.setFollowTime(follow.getCreateTime());
@@ -158,10 +151,11 @@ public class UserServiceImpl implements UserService {
         return vo;
     }
 
-    //查看我发布的商品
+    //查看我发布的商品（
     @Override
     public UserGoodVO getUserGood (Integer userId) {
-        List<Good> goodList = goodMapper.findBySellerId(userId);
+
+        List<Good> goodList = goodService.getGoodsBySellerId(userId);
 
         if (goodList == null || goodList.isEmpty()) {
             return null;
@@ -179,5 +173,4 @@ public class UserServiceImpl implements UserService {
         vo.setGoods(dtoList);
         return vo;
     }
-
 }

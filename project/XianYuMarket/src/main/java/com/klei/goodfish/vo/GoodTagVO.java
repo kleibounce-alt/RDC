@@ -1,13 +1,11 @@
-package com.klei.goodfish.entity;
+package com.klei.goodfish.vo;
 
 import lombok.Data;
 
-/**
- * @author klei
- */
 @Data
-public class GoodTag {
+public class GoodTagVO {
     private Integer id;
     private Integer goodId;
     private Integer tagId;
+    private String tagName;
 }

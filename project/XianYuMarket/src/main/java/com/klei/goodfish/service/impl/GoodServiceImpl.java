@@ -215,4 +215,14 @@ public class GoodServiceImpl implements GoodService {
         goodMapper.updateSellingStatus(status, goodId);
         return true;
     }
+
+    @Override
+    public List<Good> getGoodsBySellerId(Integer sellerId) {
+        if (sellerId == null) {
+            throw new BusinessException(400, "卖家ID不能为空");
+        }
+
+        // 查询该卖家的所有商品
+        return goodMapper.findBySellerId(sellerId);
+    }
 }

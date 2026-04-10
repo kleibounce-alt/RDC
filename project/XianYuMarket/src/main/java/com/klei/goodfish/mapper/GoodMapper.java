@@ -17,7 +17,7 @@ public interface GoodMapper {
     @Select("SELECT * FROM good WHERE id = ?")
     Good findById(Integer id);
 
-    @Select("SELECT * FROM good WHERE seller_id = ?")
+    @Select("SELECT * FROM good WHERE seller_id = ? AND status = 1")
     List<Good> findBySellerId(Integer sellerId);
 
     // 发布商品
