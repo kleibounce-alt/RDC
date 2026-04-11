@@ -57,6 +57,7 @@ public class UserLoginServlet extends HttpServlet {
                 // 登录成功，写入 Session
                 HttpSession session = req.getSession();
                 session.setAttribute("userId", vo.getUserId());
+                session.setAttribute("role", vo.getRole());
 
                 out.print(ResultUtil.success(vo.getMessage(), vo).toJson());
             } else {

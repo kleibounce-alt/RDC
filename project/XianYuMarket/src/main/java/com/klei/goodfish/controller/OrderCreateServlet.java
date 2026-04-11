@@ -17,19 +17,21 @@ import javax.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 创建订单（购买商品）
  * POST /order/create
  * Body: {"goodId":1}
- * 自动从 Session 获取 buyerId，扣款并创建订单
- * @author klei
  */
 @WebServlet("/order/create")
 public class OrderCreateServlet extends HttpServlet {
 
     private OrderService orderService = new OrderServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -40,11 +42,9 @@ public class OrderCreateServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // 从 Session 获取当前登录用户ID（买家）
             HttpSession session = req.getSession();
             Integer buyerId = (Integer) session.getAttribute("userId");
 
-            // 读取 JSON
             StringBuilder sb = new StringBuilder();
             BufferedReader reader = req.getReader();
             String line;
@@ -52,21 +52,46 @@ public class OrderCreateServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            // 转 DTO
             OrderCreateDTO dto = gson.fromJson(sb.toString(), OrderCreateDTO.class);
-            dto.setBuyerId(buyerId); // 安全处理：以 Session 为准
+            dto.setBuyerId(buyerId);
 
-            // 调用 Service（内部会扣款、改商品状态为"已出售"）
             Order order = orderService.createOrder(dto);
 
-            out.print(ResultUtil.success("下单成功，等待卖家确认", order).toJson());
+            // 关键：转换为 Map，处理 LocalDateTime
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", order.getId());
+            result.put("goodId", order.getGoodId());
+            result.put("buyerId", order.getBuyerId());
+            result.put("sellerId", order.getSellerId());
+            result.put("price", order.getPrice());
+            result.put("status", order.getStatus());
+            // 0待确认 1已完成 2已取消
+            result.put("statusName", getStatusName(order.getStatus()));
+
+            if (order.getCreateTime() != null) {
+                result.put("createTime", order.getCreateTime().format(formatter));
+            } else {
+                result.put("createTime", "");
+            }
+
+            out.print(ResultUtil.success("下单成功，等待卖家确认", result).toJson());
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             out.print(ResultUtil.fail(500, "下单失败：" + e.getMessage()).toJson());
+        }
+    }
+
+    private String getStatusName(Integer status) {
+        switch (status) {
+            case 0: return "待确认";
+            case 1: return "已完成";
+            case 2: return "已取消";
+            default: return "未知";
         }
     }
 

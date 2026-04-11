@@ -38,4 +38,6 @@ public interface GoodService {
 
     //查询卖家商品列表
     List<Good> getGoodsBySellerId(Integer sellerId);
+
+    boolean adminDeleteGood(Integer goodId);
 }

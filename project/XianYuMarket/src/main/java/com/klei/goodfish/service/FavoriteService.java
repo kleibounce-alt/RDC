@@ -23,4 +23,6 @@ public interface FavoriteService {
 
     // 查某个用户的所有收藏
     List<Favorite> getUserFavorites(Integer userId);
+
+
 }

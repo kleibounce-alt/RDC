@@ -137,4 +137,21 @@ public class CommentServiceImpl implements CommentService {
     public int getCommentCount(Integer goodId) {
         return commentMapper.countByGoodId(goodId);
     }
+
+    @Override
+    public boolean adminDeleteComment(Integer commentId) {
+        if (commentId == null) {
+            throw new BusinessException(400, "评论ID不能为空");
+        }
+
+        // 查询评论是否存在
+        Comment comment = commentMapper.findById(commentId);
+        if (comment == null || comment.getStatus() == 0) {
+            throw new BusinessException(404, "评论不存在或已删除");
+        }
+
+        // 管理员直接逻辑删除（不校验是否为本人评论）
+        commentMapper.deleteById(commentId);
+        return true;
+    }
 }

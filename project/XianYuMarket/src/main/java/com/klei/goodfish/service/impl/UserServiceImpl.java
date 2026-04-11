@@ -31,41 +31,48 @@ public class UserServiceImpl implements UserService {
     private GoodService goodService = new GoodServiceImpl();
 
     @Override
-    //注册
-    public UserRegisterVO register (UserRegisterDTO dto) {
-        String error = dto.validate();
-        if (error != null) {
-            return UserRegisterVO.fail(error);
+    public UserRegisterVO register(UserRegisterDTO dto) {
+        try {
+            System.out.println("注册开始: " + dto.getUserName());
+
+            String error = dto.validate();
+            if (error != null) {
+                return UserRegisterVO.fail(error);
+            }
+
+            User user = userMapper.findByName(dto.getUserName());
+            if (user != null) {
+                return UserRegisterVO.fail("用户名重复！");
+            }
+
+            user = new User();
+            user.setUserName(dto.getUserName());
+            user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
+            user.setAvatar("");
+            user.setRole(dto.getRole());
+            user.setStatus(1);
+            user.setWallet(BigDecimal.ZERO);
+            user.setCreateTime(LocalDateTime.now());
+
+            System.out.println("准备插入数据库...");
+            userMapper.insert(
+                    user.getUserName(),
+                    user.getPassword(),
+                    user.getRole(),
+                    user.getStatus(),
+                    user.getWallet(),
+                    user.getCreateTime(),
+                    user.getAvatar()
+            );
+            System.out.println("插入成功");
+
+            User savedUser = userMapper.findByName(dto.getUserName());
+            return UserRegisterVO.success(savedUser);
+
+        } catch (Exception e) {
+            e.printStackTrace();  // 关键：打印红色错误堆栈
+            return UserRegisterVO.fail("系统错误: " + e.getMessage());
         }
-
-        User user = userMapper.findByName(dto.getUserName());
-        if (user != null) {
-            return UserRegisterVO.fail("用户名重复！");
-        }
-
-        user = new User();
-        user.setUserName(dto.getUserName());
-        //加密
-        user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
-        user.setAvatar("");
-        user.setRole(dto.getRole());
-        user.setStatus(1);
-        user.setWallet(BigDecimal.ZERO);
-        user.setCreateTime(LocalDateTime.now());
-
-        userMapper.insert(
-                user.getUserName(),
-                user.getPassword(),
-                user.getRole(),
-                user.getStatus(),
-                user.getWallet(),
-                user.getCreateTime(),
-                user.getAvatar()
-        );
-
-        User savedUser = userMapper.findByName(dto.getUserName());
-
-        return UserRegisterVO.success(savedUser);
     }
 
     //登录
@@ -118,6 +125,8 @@ public class UserServiceImpl implements UserService {
             UserFavoriteDTO dto = new UserFavoriteDTO();
             // 查商品详情
             Good good = goodService.getGoodDetail(favorite.getGoodId());
+            // ★★★ 关键修正：设置Good对象 ★★★
+            dto.setGood(good);
             dto.setFavoriteTime(favorite.getCreateTime());
             dtoList.add(dto);
         }

@@ -19,4 +19,6 @@ public interface CommentService {
 
     // 获取商品评论总数
     int getCommentCount(Integer goodId);
+
+    boolean adminDeleteComment(Integer commentId);
 }

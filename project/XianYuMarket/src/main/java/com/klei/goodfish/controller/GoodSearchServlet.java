@@ -15,7 +15,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 搜索商品（模糊查询，无需登录）
@@ -27,6 +31,7 @@ public class GoodSearchServlet extends HttpServlet {
 
     private GoodService goodService = new GoodServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -52,12 +57,34 @@ public class GoodSearchServlet extends HttpServlet {
             // 调用 Service
             List<Good> goods = goodService.searchGoods(dto);
 
-            out.print(ResultUtil.success("搜索成功", goods).toJson());
+            // 关键：转换为 Map 列表，处理 LocalDateTime 和 null 值
+            List<Map<String, Object>> resultList = new ArrayList<>();
+            for (Good good : goods) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", good.getId());
+                map.put("goodName", good.getGoodName());
+                map.put("goodImage", good.getGoodImage());
+                map.put("goodPrice", good.getGoodPrice());
+                map.put("description", good.getDescription());
+                map.put("status", good.getStatus());
+                map.put("sellerId", good.getSellerId());
+                map.put("sellingStatus", good.getSellingStatus());
+                // 处理 null 值
+                if (good.getCreateTime() != null) {
+                    map.put("createTime", good.getCreateTime().format(formatter));
+                } else {
+                    map.put("createTime", "");
+                }
+                resultList.add(map);
+            }
+
+            out.print(ResultUtil.success("搜索成功", resultList).toJson());
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             out.print(ResultUtil.fail(500, "搜索失败：" + e.getMessage()).toJson());
         }

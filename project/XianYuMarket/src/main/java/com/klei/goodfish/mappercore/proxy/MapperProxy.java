@@ -92,7 +92,8 @@ public class MapperProxy implements InvocationHandler {
         while (rs.next()) {
             Map<String, Object> row = new HashMap<>();
             for (int i = 1; i <= columnCount; i++) {
-                row.put(metaData.getColumnName(i), rs.getObject(i));
+                // ★★★ 关键修改：使用 getColumnLabel 获取 SQL 别名（as goodPrice），而非原始列名（price）★★★
+                row.put(metaData.getColumnLabel(i), rs.getObject(i));
             }
             list.add(row);
         }

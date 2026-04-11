@@ -15,18 +15,20 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 查询钱包余额（需登录）
  * GET /wallet/balance
- * 从 Session 自动获取 userId，无需传参
- * @author klei
  */
 @WebServlet("/wallet/balance")
 public class WalletBalanceServlet extends HttpServlet {
 
     private WalletService walletService = new WalletServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -42,12 +44,24 @@ public class WalletBalanceServlet extends HttpServlet {
 
             WalletBalanceVO vo = walletService.getBalance(userId);
 
-            out.print(ResultUtil.success("查询成功", vo).toJson());
+            // 转换为 Map，防止 LocalDateTime 序列化问题
+            Map<String, Object> result = new HashMap<>();
+            result.put("userId", vo.getUserId());
+            result.put("balance", vo.getBalance());
+            result.put("userName", vo.getUserName());
+
+            // 如果有更新时间字段也处理一下（假设有）
+            // if (vo.getUpdateTime() != null) {
+            //     result.put("updateTime", vo.getUpdateTime().format(formatter));
+            // }
+
+            out.print(ResultUtil.success("查询成功", result).toJson());
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             out.print(ResultUtil.fail(500, "查询失败：" + e.getMessage()).toJson());
         }

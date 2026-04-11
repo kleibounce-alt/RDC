@@ -17,18 +17,19 @@ import javax.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 发布商品（需登录）
- * POST /good/publish
- * Body: {"goodName":"iPhone15","image":"http://xxx.jpg","price":5999.00,"description":"九成新"}
- * sellerId 从 Session 自动获取（安全考虑，不信任前端传的userId）
  */
 @WebServlet("/good/publish")
 public class GoodPublishServlet extends HttpServlet {
 
     private GoodService goodService = new GoodServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -39,11 +40,15 @@ public class GoodPublishServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // 从 Session 获取当前登录用户ID（卖家）
             HttpSession session = req.getSession();
             Integer sellerId = (Integer) session.getAttribute("userId");
 
-            // 读取 JSON 请求体
+            if (sellerId == null) {
+                resp.setStatus(401);
+                out.print(ResultUtil.fail(401, "请先登录").toJson());
+                return;
+            }
+
             StringBuilder sb = new StringBuilder();
             BufferedReader reader = req.getReader();
             String line;
@@ -51,22 +56,35 @@ public class GoodPublishServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            // 转换为 DTO
             GoodPublishDTO dto = gson.fromJson(sb.toString(), GoodPublishDTO.class);
-
-            // 安全处理：sellerId 以 Session 为准，忽略前端传的（防止伪造）
             dto.setSellerId(sellerId);
 
-            // 调用 Service 发布商品（返回 Good 实体）
             Good good = goodService.publishGood(dto);
 
-            // 返回成功（包含创建的商品信息，含自增ID）
-            out.print(ResultUtil.success("发布成功", good).toJson());
+            // 转换为 Map，处理 null 值
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", good.getId());
+            result.put("goodName", good.getGoodName());
+            result.put("goodImage", good.getGoodImage());
+            result.put("goodPrice", good.getGoodPrice());
+            result.put("description", good.getDescription());
+            result.put("status", good.getStatus());
+            result.put("sellerId", good.getSellerId());
+            result.put("sellingStatus", good.getSellingStatus());
+            // 关键修复：判断 null
+            if (good.getCreateTime() != null) {
+                result.put("createTime", good.getCreateTime().format(formatter));
+            } else {
+                result.put("createTime", "");
+            }
+
+            out.print(ResultUtil.success("发布成功", result).toJson());
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             out.print(ResultUtil.fail(500, "发布失败：" + e.getMessage()).toJson());
         }

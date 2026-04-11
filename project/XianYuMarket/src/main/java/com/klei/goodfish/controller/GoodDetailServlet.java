@@ -14,17 +14,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 查询商品详情（无需登录，白名单接口）
+ * 查询商品详情（无需登录）
  * GET /good/detail?id=1
- * @author klei
  */
 @WebServlet("/good/detail")
 public class GoodDetailServlet extends HttpServlet {
 
     private GoodService goodService = new GoodServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -35,7 +38,6 @@ public class GoodDetailServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // 从 URL 参数获取商品ID
             String idStr = req.getParameter("id");
             if (idStr == null || idStr.trim().isEmpty()) {
                 resp.setStatus(400);
@@ -44,12 +46,29 @@ public class GoodDetailServlet extends HttpServlet {
             }
 
             Integer goodId = Integer.parseInt(idStr);
-
-            // 调用 Service 查询
             Good good = goodService.getGoodDetail(goodId);
 
-            // 返回成功
-            out.print(ResultUtil.success("查询成功", good).toJson());
+            // 转换为 Map，处理 LocalDateTime
+            Map<String, Object> result = new HashMap<>();
+            result.put("id", good.getId());
+            result.put("goodName", good.getGoodName());
+            result.put("goodImage", good.getGoodImage());
+
+            // 关键：必须有这行！添加价格字段
+            result.put("goodPrice", good.getGoodPrice());
+
+            result.put("description", good.getDescription());
+            result.put("status", good.getStatus());
+            result.put("sellerId", good.getSellerId());
+            result.put("sellingStatus", good.getSellingStatus());
+
+            if (good.getCreateTime() != null) {
+                result.put("createTime", good.getCreateTime().format(formatter));
+            } else {
+                result.put("createTime", "");
+            }
+
+            out.print(ResultUtil.success("查询成功", result).toJson());
 
         } catch (NumberFormatException e) {
             resp.setStatus(400);
@@ -58,8 +77,9 @@ public class GoodDetailServlet extends HttpServlet {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
-            out.print(ResultUtil.fail(500, "系统错误").toJson());
+            out.print(ResultUtil.fail(500, "系统错误：" + e.getMessage()).toJson());
         }
     }
 

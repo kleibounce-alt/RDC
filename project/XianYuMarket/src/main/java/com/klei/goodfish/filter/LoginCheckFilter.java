@@ -17,12 +17,12 @@ import java.util.List;
  * 登录校验过滤器 - 拦截需要登录的接口
  * @author klei
  */
-@WebFilter("/*")  // 过滤所有，内部判断哪些需要登录
+@WebFilter("/*")
 public class LoginCheckFilter implements Filter {
 
     private Gson gson = new Gson();
 
-    // 不需要登录的白名单（注册、登录、查商品等）
+    // 白名单：不需要登录就能访问的接口
     private static final List<String> WHITE_LIST = Arrays.asList(
             "/user/register",
             "/user/login",
@@ -41,12 +41,22 @@ public class LoginCheckFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        // 获取请求路径（去掉上下文）
+        // 放行 CORS 预检请求
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        // 获取请求路径（标准方式：去掉 contextPath）
         String path = request.getRequestURI();
         String context = request.getContextPath();
+
+        // 去掉上下文路径（如果配置了根路径 /，context 为空，path 不变）
         if (path.startsWith(context)) {
             path = path.substring(context.length());
         }
+
+        System.out.println("请求路径: " + path + ", 方法: " + request.getMethod());
 
         // 白名单直接放行
         if (isWhiteList(path)) {
@@ -57,7 +67,6 @@ public class LoginCheckFilter implements Filter {
         // 检查 Session
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            // 未登录，返回 401
             response.setContentType("application/json;charset=UTF-8");
             response.setStatus(401);
             PrintWriter out = response.getWriter();
@@ -65,12 +74,11 @@ public class LoginCheckFilter implements Filter {
             return;
         }
 
-        // 已登录，放行
+        // 已登录放行
         chain.doFilter(req, res);
     }
 
     private boolean isWhiteList(String path) {
-        // 精确匹配或前缀匹配
         for (String white : WHITE_LIST) {
             if (path.equals(white) || path.startsWith(white + "/")) {
                 return true;

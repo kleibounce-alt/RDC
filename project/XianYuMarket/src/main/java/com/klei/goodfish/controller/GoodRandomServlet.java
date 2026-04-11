@@ -14,19 +14,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 随机推荐商品（无需登录）
- * GET /good/random?limit=8
- * limit 不传默认返回8个
- * @author klei
  */
 @WebServlet("/good/random")
 public class GoodRandomServlet extends HttpServlet {
 
     private GoodService goodService = new GoodServiceImpl();
     private Gson gson = new Gson();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -37,17 +39,36 @@ public class GoodRandomServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // 获取 limit 参数，不传默认为8
             String limitStr = req.getParameter("limit");
-            Integer limit = 8; // 默认值
+            Integer limit = 8;
             if (limitStr != null && !limitStr.trim().isEmpty()) {
                 limit = Integer.parseInt(limitStr);
             }
 
-            // 调用 Service
             List<Good> goods = goodService.getRandomGoods(limit);
 
-            out.print(ResultUtil.success("查询成功", goods).toJson());
+            // 转换为 List<Map>，处理 null 值
+            List<Map<String, Object>> resultList = new ArrayList<>();
+            for (Good good : goods) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", good.getId());
+                map.put("goodName", good.getGoodName());
+                map.put("goodImage", good.getGoodImage());
+                map.put("goodPrice", good.getGoodPrice());
+                map.put("description", good.getDescription());
+                map.put("status", good.getStatus());
+                map.put("sellerId", good.getSellerId());
+                map.put("sellingStatus", good.getSellingStatus());
+                // 关键修复：判断 null
+                if (good.getCreateTime() != null) {
+                    map.put("createTime", good.getCreateTime().format(formatter));
+                } else {
+                    map.put("createTime", "");
+                }
+                resultList.add(map);
+            }
+
+            out.print(ResultUtil.success("查询成功", resultList).toJson());
 
         } catch (NumberFormatException e) {
             resp.setStatus(400);
@@ -56,6 +77,7 @@ public class GoodRandomServlet extends HttpServlet {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             out.print(ResultUtil.fail(500, "系统错误").toJson());
         }

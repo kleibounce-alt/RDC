@@ -82,4 +82,6 @@ public class FavoriteServiceImpl implements FavoriteService {
         }
         return favoriteMapper.findByUserId(userId);
     }
+
+
 }

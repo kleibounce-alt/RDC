@@ -225,4 +225,25 @@ public class GoodServiceImpl implements GoodService {
         // 查询该卖家的所有商品
         return goodMapper.findBySellerId(sellerId);
     }
+
+    @Override
+    public boolean adminDeleteGood(Integer goodId) {
+        if (goodId == null) {
+            throw new BusinessException(400, "商品ID不能为空");
+        }
+
+        Good good = goodMapper.findById(goodId);
+        if (good == null) {
+            throw new BusinessException(404, "商品不存在");
+        }
+
+        // 已删除的无需重复删除
+        if (good.getStatus() == 0) {
+            return true;
+        }
+
+        // 直接逻辑删除（管理员无需再校验权限，直接删除）
+        goodMapper.deleteById(goodId);
+        return true;
+    }
 }
