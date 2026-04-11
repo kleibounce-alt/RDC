@@ -35,26 +35,33 @@ public class TagServiceImpl implements TagService {
             throw new BusinessException(400, "标签名称不能为空");
         }
 
-        // 权限校验：只有管理员(role=1)或商家(role=2)能创建标签
-        User user = userMapper.findById(dto.getUserId());
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
-        }
-        if (user.getRole() != 1 && user.getRole() != 2) {
-            throw new BusinessException(403, "无权创建标签");
+        // 清理标签名称（去除前后空格，限制长度）
+        String tagName = dto.getTagName().trim();
+        if (tagName.length() > 20) {
+            throw new BusinessException(400, "标签名称不能超过20个字符");
         }
 
-        // 查重：标签名唯一
-        Tag exist = tagMapper.findByName(dto.getTagName().trim());
+        // 检查用户是否登录（只要登录用户都能创建标签，不再限制角色）
+        User user = userMapper.findById(dto.getUserId());
+        if (user == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
+        // 查重：标签名唯一（不区分大小写）
+        Tag exist = tagMapper.findByName(tagName);
         if (exist != null) {
-            throw new BusinessException(400, "标签已存在");
+            // 如果标签已存在，直接返回现有标签，不报错
+            TagVO vo = new TagVO();
+            vo.setTagId(exist.getId());
+            vo.setTagName(exist.getTagName());
+            return vo;
         }
 
         // 创建标签
-        tagMapper.insert(dto.getTagName().trim());
+        tagMapper.insert(tagName);
 
         // 查询返回（根据名称查ID）
-        Tag newTag = tagMapper.findByName(dto.getTagName().trim());
+        Tag newTag = tagMapper.findByName(tagName);
         if (newTag == null) {
             throw new BusinessException(500, "创建失败");
         }

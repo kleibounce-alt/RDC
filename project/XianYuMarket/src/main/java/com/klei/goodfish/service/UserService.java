@@ -27,4 +27,7 @@ public interface UserService {
 
     //查看我发布的商品
     UserGoodVO getUserGood (Integer userId);
+
+    // 更新用户头像
+    boolean updateAvatar(Integer userId, String avatarUrl);
 }

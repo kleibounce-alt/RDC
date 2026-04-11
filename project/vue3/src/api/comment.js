@@ -17,7 +17,7 @@ export function deleteComment(commentId) {
     return request({
         url: '/comment/delete',
         method: 'post',
-        params: { commentId }
+        data: { commentId }
     })
 }
 
@@ -27,5 +27,23 @@ export function getGoodComments(goodId) {
         url: '/comment/list',
         method: 'get',
         params: { goodId }
+    })
+}
+
+// POST /comment/like - 确保这个API存在
+export function likeComment(commentId) {
+    return request({
+        url: '/comment/like',
+        method: 'post',
+        data: { commentId }
+    })
+}
+
+// POST /comment/unlike - 确保这个API存在
+export function unlikeComment(commentId) {
+    return request({
+        url: '/comment/unlike',
+        method: 'post',
+        data: { commentId }
     })
 }

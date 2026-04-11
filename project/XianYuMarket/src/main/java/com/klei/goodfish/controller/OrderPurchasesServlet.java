@@ -2,11 +2,11 @@ package com.klei.goodfish.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.klei.goodfish.service.UserService;
-import com.klei.goodfish.service.impl.UserServiceImpl;
+import com.klei.goodfish.service.OrderService;
+import com.klei.goodfish.service.impl.OrderServiceImpl;
 import com.klei.goodfish.util.BusinessException;
 import com.klei.goodfish.util.ResultUtil;
-import com.klei.goodfish.vo.UserFollowVO;
+import com.klei.goodfish.vo.OrderVO;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -18,19 +18,18 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 查看我的关注列表（需登录）
- * GET /user/follow
- * @author klei
+ * 获取我购买的订单（买家视角）
+ * GET /order/purchases
  */
-@WebServlet("/user/follow")
-public class UserFollowServlet extends HttpServlet {
+@WebServlet("/order/purchases")
+public class OrderPurchasesServlet extends HttpServlet {
 
-    private UserService userService = new UserServiceImpl();
+    private OrderService orderService = new OrderServiceImpl();
 
-    // ★★★ 关键修复：配置 Gson 正确处理 LocalDateTime ★★★
+    // 配置 Gson 正确处理 LocalDateTime
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class, new com.google.gson.JsonSerializer<LocalDateTime>() {
                 private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -50,38 +49,24 @@ public class UserFollowServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            HttpSession session = req.getSession(false);
-            if (session == null) {
+            // 从 Session 获取当前登录用户ID
+            HttpSession session = req.getSession();
+            Integer buyerId = (Integer) session.getAttribute("userId");
+
+            if (buyerId == null) {
                 resp.setStatus(401);
                 out.print(ResultUtil.fail(401, "请先登录").toJson());
                 return;
             }
 
-            Integer userId = (Integer) session.getAttribute("userId");
-            if (userId == null) {
-                resp.setStatus(401);
-                out.print(ResultUtil.fail(401, "请先登录").toJson());
-                return;
-            }
+            System.out.println("[OrderPurchases] 查询购买订单, buyerId=" + buyerId);
 
-            System.out.println("[UserFollow] 查询用户关注, userId=" + userId);
+            // 调用 Service 查询购买订单
+            List<OrderVO> orders = orderService.getMyPurchases(buyerId);
 
-            UserFollowVO vo = userService.getUserFollow(userId);
+            System.out.println("[OrderPurchases] 查询结果: " + (orders != null ? orders.size() : 0) + " 条记录");
 
-            // ★★★ 关键修复：确保返回空数组而不是 null ★★★
-            if (vo == null) {
-                vo = new UserFollowVO();
-                vo.setUserId(userId);
-                vo.setFollowings(new ArrayList<>());
-            }
-
-            if (vo.getFollowings() == null) {
-                vo.setFollowings(new ArrayList<>());
-            }
-
-            System.out.println("[UserFollow] 返回关注数量: " + vo.getFollowings().size());
-
-            out.print(ResultUtil.success("查询成功", vo).toJson());
+            out.print(ResultUtil.success("查询成功", orders).toJson());
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
@@ -89,7 +74,7 @@ public class UserFollowServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             resp.setStatus(500);
-            out.print(ResultUtil.fail(500, "系统错误: " + e.getMessage()).toJson());
+            out.print(ResultUtil.fail(500, "查询失败: " + e.getMessage()).toJson());
         }
     }
 

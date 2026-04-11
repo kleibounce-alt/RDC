@@ -4,18 +4,15 @@ import com.klei.goodfish.dto.CommentPublishDTO;
 import com.klei.goodfish.vo.CommentVO;
 import java.util.List;
 
-/**
- * @author klei
- */
 public interface CommentService {
-    // 发表评论，返回带用户信息的VO
+    // 发表评论
     CommentVO publishComment(CommentPublishDTO dto);
 
-    // 删除评论，返回是否成功
+    // 删除评论
     boolean deleteComment(Integer commentId, Integer operatorId);
 
-    // 查商品的所有评论
-    List<CommentVO> getCommentsByGoodId(Integer goodId);
+    // 查询商品的所有评论 - 修复：添加当前用户ID参数
+    List<CommentVO> getCommentsByGoodId(Integer goodId, Integer currentUserId);
 
     // 获取商品评论总数
     int getCommentCount(Integer goodId);

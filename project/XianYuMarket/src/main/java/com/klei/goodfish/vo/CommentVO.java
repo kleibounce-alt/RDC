@@ -14,6 +14,9 @@ public class CommentVO {
     private String userName;
     private String avatar;
 
-    // 点赞数
+    // 点赞数 - 从数据库查询
     private Integer likeCount;
+
+    // 关键：当前用户是否已点赞
+    private boolean hasLiked;
 }

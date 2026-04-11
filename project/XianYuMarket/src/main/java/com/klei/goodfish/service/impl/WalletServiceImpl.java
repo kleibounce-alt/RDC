@@ -16,9 +16,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author klei
- */
 public class WalletServiceImpl implements WalletService {
 
     private WalletLogMapper walletLogMapper = MapperProxy.getMapper(WalletLogMapper.class);
@@ -42,12 +39,14 @@ public class WalletServiceImpl implements WalletService {
         // 计算新余额
         BigDecimal before = user.getWallet();
         BigDecimal after = before.add(dto.getAmount());
+        System.out.println("[Wallet] 充值: user=" + dto.getUserId() + ", before=" + before + ", after=" + after);
 
         // 更新用户余额
         userMapper.updateWallet(after, dto.getUserId());
 
         // 记录流水（type=1 充值）
         walletLogMapper.insert(dto.getUserId(), dto.getAmount(), before, after, 1, null);
+        System.out.println("[Wallet] 充值流水记录完成");
 
         return true;
     }
@@ -69,22 +68,28 @@ public class WalletServiceImpl implements WalletService {
 
         // 检查余额是否充足
         BigDecimal before = user.getWallet();
+        System.out.println("[Wallet] 支付前余额: " + before + ", 需要支付: " + dto.getAmount());
+
         if (before.compareTo(dto.getAmount()) < 0) {
             throw new BusinessException(400, "余额不足，请先充值");
         }
 
         // 计算新余额（扣款）
         BigDecimal after = before.subtract(dto.getAmount());
+        System.out.println("[Wallet] 支付后余额: " + after);
 
         // 更新余额
         userMapper.updateWallet(after, dto.getUserId());
+        System.out.println("[Wallet] 余额更新完成");
 
+        // 记录流水（type=2 购买，金额为负数）
         walletLogMapper.insert(dto.getUserId(),
-                dto.getAmount().negate(),
+                dto.getAmount().negate(), // 负数表示支出
                 before,
                 after,
                 2,
                 dto.getRelatedId());
+        System.out.println("[Wallet] 支付流水记录完成");
 
         return true;
     }
@@ -103,7 +108,6 @@ public class WalletServiceImpl implements WalletService {
         WalletBalanceVO vo = new WalletBalanceVO();
         vo.setUserId(userId);
         vo.setBalance(user.getWallet());
-
         vo.setTotalRecharge(BigDecimal.ZERO);
         vo.setTotalSpend(BigDecimal.ZERO);
 
@@ -170,12 +174,15 @@ public class WalletServiceImpl implements WalletService {
 
         BigDecimal before = seller.getWallet();
         BigDecimal after = before.add(amount);
+        System.out.println("[Wallet] 收入: seller=" + sellerId + ", before=" + before + ", after=" + after + ", amount=" + amount);
 
         // 更新余额
         userMapper.updateWallet(after, sellerId);
+        System.out.println("[Wallet] 卖家余额更新完成");
 
         // 记录流水（type=3 收入）
         walletLogMapper.insert(sellerId, amount, before, after, 3, orderId);
+        System.out.println("[Wallet] 收入流水记录完成");
 
         return true;
     }

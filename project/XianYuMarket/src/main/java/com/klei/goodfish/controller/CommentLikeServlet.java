@@ -1,9 +1,9 @@
 package com.klei.goodfish.controller;
 
 import com.google.gson.Gson;
-import com.klei.goodfish.dto.AdminDeleteDTO;
-import com.klei.goodfish.service.GoodService;
-import com.klei.goodfish.service.impl.GoodServiceImpl;
+import com.klei.goodfish.dto.CommentLikeDTO;
+import com.klei.goodfish.service.CommentLikeService;
+import com.klei.goodfish.service.impl.CommentLikeServiceImpl;
 import com.klei.goodfish.util.BusinessException;
 import com.klei.goodfish.util.ResultUtil;
 
@@ -17,10 +17,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-@WebServlet("/admin/good/delete")
-public class AdminDeleteGoodServlet extends HttpServlet {
+@WebServlet("/comment/like")
+public class CommentLikeServlet extends HttpServlet {
 
-    private GoodService goodService = new GoodServiceImpl();
+    private CommentLikeService likeService = new CommentLikeServiceImpl();
     private Gson gson = new Gson();
 
     @Override
@@ -34,19 +34,10 @@ public class AdminDeleteGoodServlet extends HttpServlet {
         try {
             HttpSession session = req.getSession();
             Integer userId = (Integer) session.getAttribute("userId");
-            Integer role = (Integer) session.getAttribute("role");
 
-            // 检查登录
             if (userId == null) {
                 resp.setStatus(401);
                 out.print(ResultUtil.fail(401, "请先登录").toJson());
-                return;
-            }
-
-            // 检查管理员权限（0=普通用户，1=管理员）
-            if (role == null || role != 1) {
-                resp.setStatus(403);
-                out.print(ResultUtil.fail(403, "无权操作，需要管理员权限").toJson());
                 return;
             }
 
@@ -58,22 +49,29 @@ public class AdminDeleteGoodServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            AdminDeleteDTO dto = gson.fromJson(sb.toString(), AdminDeleteDTO.class);
+            // 解析参数
+            java.util.Map map = gson.fromJson(sb.toString(), java.util.Map.class);
+            Object commentIdObj = map.get("commentId");
 
-            if (dto.getGoodId() == null) {
+            if (commentIdObj == null) {
                 resp.setStatus(400);
-                out.print(ResultUtil.fail(400, "商品ID不能为空").toJson());
+                out.print(ResultUtil.fail(400, "评论ID不能为空").toJson());
                 return;
             }
 
-            // 调用 Service（逻辑删除或物理删除）
-            boolean success = goodService.adminDeleteGood(dto.getGoodId());
+            Integer commentId = ((Number) commentIdObj).intValue();
+
+            CommentLikeDTO dto = new CommentLikeDTO();
+            dto.setCommentId(commentId);
+            dto.setUserId(userId);
+
+            boolean success = likeService.like(dto);
 
             if (success) {
-                out.print(ResultUtil.success("删除商品成功", null).toJson());
+                out.print(ResultUtil.success("点赞成功", null).toJson());
             } else {
                 resp.setStatus(500);
-                out.print(ResultUtil.fail(500, "删除失败，商品不存在").toJson());
+                out.print(ResultUtil.fail(500, "点赞失败").toJson());
             }
 
         } catch (BusinessException e) {
@@ -81,7 +79,6 @@ public class AdminDeleteGoodServlet extends HttpServlet {
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
             resp.setStatus(500);
-            // ★★★ 关键修复：修正字符串拼接语法错误 ★★★
             out.print(ResultUtil.fail(500, "系统错误：" + e.getMessage()).toJson());
         }
     }

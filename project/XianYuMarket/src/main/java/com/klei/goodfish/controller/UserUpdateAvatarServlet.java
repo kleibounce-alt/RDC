@@ -1,9 +1,8 @@
 package com.klei.goodfish.controller;
 
 import com.google.gson.Gson;
-import com.klei.goodfish.dto.AdminDeleteDTO;
-import com.klei.goodfish.service.GoodService;
-import com.klei.goodfish.service.impl.GoodServiceImpl;
+import com.klei.goodfish.service.UserService;
+import com.klei.goodfish.service.impl.UserServiceImpl;
 import com.klei.goodfish.util.BusinessException;
 import com.klei.goodfish.util.ResultUtil;
 
@@ -16,11 +15,18 @@ import javax.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 
-@WebServlet("/admin/good/delete")
-public class AdminDeleteGoodServlet extends HttpServlet {
+/**
+ * 更新用户头像
+ * POST /user/updateAvatar
+ * Body: {"avatar":"http://localhost:8080/uploads/xxx.jpg"}
+ * @author klei
+ */
+@WebServlet("/user/updateAvatar")
+public class UserUpdateAvatarServlet extends HttpServlet {
 
-    private GoodService goodService = new GoodServiceImpl();
+    private UserService userService = new UserServiceImpl();
     private Gson gson = new Gson();
 
     @Override
@@ -34,19 +40,10 @@ public class AdminDeleteGoodServlet extends HttpServlet {
         try {
             HttpSession session = req.getSession();
             Integer userId = (Integer) session.getAttribute("userId");
-            Integer role = (Integer) session.getAttribute("role");
 
-            // 检查登录
             if (userId == null) {
                 resp.setStatus(401);
                 out.print(ResultUtil.fail(401, "请先登录").toJson());
-                return;
-            }
-
-            // 检查管理员权限（0=普通用户，1=管理员）
-            if (role == null || role != 1) {
-                resp.setStatus(403);
-                out.print(ResultUtil.fail(403, "无权操作，需要管理员权限").toJson());
                 return;
             }
 
@@ -58,31 +55,41 @@ public class AdminDeleteGoodServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            AdminDeleteDTO dto = gson.fromJson(sb.toString(), AdminDeleteDTO.class);
+            // 解析 avatar URL
+            Map<String, String> map = gson.fromJson(sb.toString(), Map.class);
+            String avatarUrl = map.get("avatar");
 
-            if (dto.getGoodId() == null) {
+            if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
                 resp.setStatus(400);
-                out.print(ResultUtil.fail(400, "商品ID不能为空").toJson());
+                out.print(ResultUtil.fail(400, "头像URL不能为空").toJson());
                 return;
             }
 
-            // 调用 Service（逻辑删除或物理删除）
-            boolean success = goodService.adminDeleteGood(dto.getGoodId());
+            // 调用 Service 更新头像
+            boolean success = userService.updateAvatar(userId, avatarUrl.trim());
 
             if (success) {
-                out.print(ResultUtil.success("删除商品成功", null).toJson());
+                out.print(ResultUtil.success("头像更新成功", null).toJson());
             } else {
                 resp.setStatus(500);
-                out.print(ResultUtil.fail(500, "删除失败，商品不存在").toJson());
+                out.print(ResultUtil.fail(500, "头像更新失败").toJson());
             }
 
         } catch (BusinessException e) {
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
-            // ★★★ 关键修复：修正字符串拼接语法错误 ★★★
             out.print(ResultUtil.fail(500, "系统错误：" + e.getMessage()).toJson());
         }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setStatus(405);
+        resp.getWriter().print(ResultUtil.fail(405, "请使用 POST 方法").toJson());
     }
 }

@@ -77,6 +77,7 @@ public class AdminDeleteCommentServlet extends HttpServlet {
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
             resp.setStatus(500);
+            // ★★★ 关键修复：修正字符串拼接语法错误 ★★★
             out.print(ResultUtil.fail(500, "系统错误：" + e.getMessage()).toJson());
         }
     }

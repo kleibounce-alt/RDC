@@ -1,31 +1,298 @@
-/* 全局重置，强制电脑端全屏 */
+/* ===== 全局CSS变量与设计系统 ===== */
+:root {
+  /* 主色调 - 紫蓝渐变 */
+  --primary-color: #667eea;
+  --primary-dark: #5a67d8;
+  --primary-light: #7c3aed;
+  --secondary-color: #764ba2;
+
+  /* 玻璃拟态基础色 */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-bg-dark: rgba(255, 255, 255, 0.15);
+  --glass-bg-light: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+  /* 背景渐变 */
+  --gradient-bg: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-warm: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+
+  /* 文字颜色 */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #9ca3af;
+
+  /* 功能色 */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* 尺寸 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* 动画 */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* 关键修复：emoji字体控制 */
+  --emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+}
+
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+}
+
+/* 关键修复：确保 html 和 body 不会溢出 */
+html {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
 }
 
 html, body, #app {
   width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--gradient-bg);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  line-height: 1.6;
+  /* 关键修复：防止弹性布局导致的溢出 */
+  overflow-x: hidden;
+  position: relative;
 }
 
-/* 强制最小宽度，防止浏览器缩窄变成竖屏 */
-body {
-  min-width: 1200px;
-  overflow-x: auto; /* 如果窗口小于1200px出现滚动条，而不是压缩 */
+/* 关键修复：控制所有 emoji 的大小 */
+.emoji, [class*="emoji"], .empty-icon, .title-icon, .brand-icon {
+  font-family: var(--emoji-font) !important;
+  font-size: inherit !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* 确保 Element Plus 组件不会限制宽度 */
-.el-container, .el-main, .el-header, .el-footer {
+/* 特定大小控制 */
+.emoji-small {
+  font-size: 48px !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.emoji-medium {
+  font-size: 64px !important;
+  width: 64px !important;
+  height: 64px !important;
+}
+
+.emoji-large {
+  font-size: 96px !important;
+  width: 96px !important;
+  height: 96px !important;
+}
+
+/* 玻璃拟态基础类 */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-dark {
+  background: var(--glass-bg-dark);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 动画定义 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* 全局滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.8);
+}
+
+/* 按钮基础样式优化 */
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+  /* 关键修复：防止按钮内 emoji 过大 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+button:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* 关键修复：确保按钮内的 emoji 不会太大 */
+button .emoji,
+button span[class*="emoji"] {
+  font-size: 1.2em !important;
+  line-height: 1 !important;
+}
+
+/* 输入框基础样式 */
+input, textarea {
+  font-family: inherit;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all var(--transition-fast);
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* 卡片悬浮效果 */
+.card-hover {
+  transition: all var(--transition-normal);
+}
+
+.card-hover:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(31, 38, 135, 0.2);
+}
+
+/* 文字渐变 */
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 加载动画 */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* 关键修复：Element Plus 弹窗全局修复 */
+.el-message-box {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.el-message-box__wrapper {
+  backdrop-filter: blur(8px) !important;
+}
+
+.el-overlay {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* 关键修复：防止弹窗打开时的布局抖动 */
+body.el-popup-parent--hidden {
+  overflow: hidden !important;
+  position: fixed !important;
   width: 100% !important;
-  max-width: none !important;
+  height: 100% !important;
+  padding-right: 0 !important;
 }
 
-/* 移除 vite 默认的居中限制 */
+/* 关键修复：确保 #app 容器不会溢出 */
 #app {
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  text-align: left !important;
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* 响应式修复 */
+@media (max-width: 768px) {
+  html, body {
+    font-size: 14px;
+  }
+
+  .emoji-small {
+    font-size: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .emoji-medium {
+    font-size: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
 }

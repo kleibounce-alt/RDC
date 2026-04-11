@@ -15,9 +15,9 @@ import java.util.UUID;
 
 @WebServlet("/upload/image")
 @MultipartConfig(
-        fileSizeThreshold = 1024 * 1024,      // 1MB
-        maxFileSize = 1024 * 1024 * 5,        // 5MB
-        maxRequestSize = 1024 * 1024 * 10       // 10MB
+        fileSizeThreshold = 1024 * 1024,
+        maxFileSize = 1024 * 1024 * 5,
+        maxRequestSize = 1024 * 1024 * 10
 )
 public class ImageUploadServlet extends HttpServlet {
 
@@ -32,7 +32,6 @@ public class ImageUploadServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         try {
-            // 检查登录（使用你设置的 userId）
             HttpSession session = req.getSession(false);
             if (session == null || session.getAttribute("userId") == null) {
                 resp.setStatus(401);
@@ -47,7 +46,6 @@ public class ImageUploadServlet extends HttpServlet {
                 return;
             }
 
-            // 检查文件类型
             String contentType = filePart.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
                 resp.setStatus(400);
@@ -55,7 +53,6 @@ public class ImageUploadServlet extends HttpServlet {
                 return;
             }
 
-            // 创建上传目录
             String appPath = req.getServletContext().getRealPath("");
             String uploadPath = appPath + File.separator + UPLOAD_DIR;
             File uploadDir = new File(uploadPath);
@@ -63,18 +60,22 @@ public class ImageUploadServlet extends HttpServlet {
                 uploadDir.mkdirs();
             }
 
-            // 生成唯一文件名
             String extension = contentType.contains("png") ? ".png" : ".jpg";
             String fileName = UUID.randomUUID().toString() + extension;
             String filePath = uploadPath + File.separator + fileName;
 
-            // 保存文件
             filePart.write(filePath);
 
-            // 返回相对路径
-            String relativePath = "/" + UPLOAD_DIR + "/" + fileName;
+            // ★★★ 关键修复：构建完整URL，包含协议、服务器名和端口 ★★★
+            String scheme = req.getScheme(); // http 或 https
+            String serverName = req.getServerName(); // localhost
+            int serverPort = req.getServerPort(); // 8080
+            String fullUrl = scheme + "://" + serverName + ":" + serverPort + "/" + UPLOAD_DIR + "/" + fileName;
+
             Map<String, Object> data = new HashMap<>();
-            data.put("url", relativePath);
+            data.put("url", fullUrl); // 返回完整URL
+            data.put("relativePath", "/" + UPLOAD_DIR + "/" + fileName); // 同时返回相对路径备用
+            data.put("fileName", fileName);
 
             out.print(ResultUtil.success("上传成功", data).toJson());
 

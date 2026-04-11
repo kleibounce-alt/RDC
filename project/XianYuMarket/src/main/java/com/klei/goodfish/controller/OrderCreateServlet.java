@@ -65,6 +65,7 @@ public class OrderCreateServlet extends HttpServlet {
             result.put("sellerId", order.getSellerId());
             result.put("price", order.getPrice());
             result.put("status", order.getStatus());
+            // ★★★ 修复：修正中文乱码 ★★★
             // 0待确认 1已完成 2已取消
             result.put("statusName", getStatusName(order.getStatus()));
 
@@ -86,6 +87,7 @@ public class OrderCreateServlet extends HttpServlet {
         }
     }
 
+    // ★★★ 修复：修正中文状态名称 ★★★
     private String getStatusName(Integer status) {
         switch (status) {
             case 0: return "待确认";

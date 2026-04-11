@@ -6,7 +6,7 @@ import com.klei.goodfish.service.UserService;
 import com.klei.goodfish.service.impl.UserServiceImpl;
 import com.klei.goodfish.util.BusinessException;
 import com.klei.goodfish.util.ResultUtil;
-import com.klei.goodfish.vo.UserFollowVO;
+import com.klei.goodfish.vo.UserGoodVO;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -21,12 +21,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 /**
- * 查看我的关注列表（需登录）
- * GET /user/follow
+ * 查看我发布的商品（需登录）
+ * GET /user/good
  * @author klei
  */
-@WebServlet("/user/follow")
-public class UserFollowServlet extends HttpServlet {
+@WebServlet("/user/good")
+public class UserGoodServlet extends HttpServlet {
 
     private UserService userService = new UserServiceImpl();
 
@@ -64,22 +64,22 @@ public class UserFollowServlet extends HttpServlet {
                 return;
             }
 
-            System.out.println("[UserFollow] 查询用户关注, userId=" + userId);
+            System.out.println("[UserGood] 查询用户商品, userId=" + userId);
 
-            UserFollowVO vo = userService.getUserFollow(userId);
+            UserGoodVO vo = userService.getUserGood(userId);
 
             // ★★★ 关键修复：确保返回空数组而不是 null ★★★
             if (vo == null) {
-                vo = new UserFollowVO();
+                vo = new UserGoodVO();
                 vo.setUserId(userId);
-                vo.setFollowings(new ArrayList<>());
+                vo.setGoods(new ArrayList<>());
             }
 
-            if (vo.getFollowings() == null) {
-                vo.setFollowings(new ArrayList<>());
+            if (vo.getGoods() == null) {
+                vo.setGoods(new ArrayList<>());
             }
 
-            System.out.println("[UserFollow] 返回关注数量: " + vo.getFollowings().size());
+            System.out.println("[UserGood] 返回商品数量: " + vo.getGoods().size());
 
             out.print(ResultUtil.success("查询成功", vo).toJson());
 

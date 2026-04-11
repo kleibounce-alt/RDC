@@ -22,7 +22,7 @@ public class LoginCheckFilter implements Filter {
 
     private Gson gson = new Gson();
 
-    // 白名单：不需要登录就能访问的接口
+    // 白名单：不需要登录就能访问的接口（都不带 /api 前缀，因为 Vite 已经 rewrite 掉了）
     private static final List<String> WHITE_LIST = Arrays.asList(
             "/user/register",
             "/user/login",
@@ -56,7 +56,7 @@ public class LoginCheckFilter implements Filter {
             path = path.substring(context.length());
         }
 
-        System.out.println("请求路径: " + path + ", 方法: " + request.getMethod());
+        System.out.println("[LoginCheckFilter] 路径: " + path + ", 方法: " + request.getMethod());
 
         // 白名单直接放行
         if (isWhiteList(path)) {
@@ -67,6 +67,7 @@ public class LoginCheckFilter implements Filter {
         // 检查 Session
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
+            System.out.println("[LoginCheckFilter] 拦截: " + path + " - 未登录");
             response.setContentType("application/json;charset=UTF-8");
             response.setStatus(401);
             PrintWriter out = response.getWriter();
@@ -75,6 +76,7 @@ public class LoginCheckFilter implements Filter {
         }
 
         // 已登录放行
+        System.out.println("[LoginCheckFilter] 放行: " + path + " - 用户ID: " + session.getAttribute("userId"));
         chain.doFilter(req, res);
     }
 

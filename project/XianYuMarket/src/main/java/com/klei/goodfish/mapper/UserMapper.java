@@ -26,5 +26,9 @@ public interface UserMapper {
     @Update("UPDATE user SET wallet = ? WHERE id = ?")
     void updateWallet(BigDecimal newBalance, Integer userId);
 
+    // 更新用户头像
+    @Update("UPDATE user SET avatar = ? WHERE id = ?")
+    void updateAvatar(String avatar, Integer userId);
+
 }
 

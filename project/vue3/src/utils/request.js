@@ -1,9 +1,9 @@
 import axios from 'axios'
 
 const request = axios.create({
-    baseURL: '/api',
+    baseURL: '/api',  // 所有请求加 /api 前缀，被上面 rewrite 去掉后转发到后端
     timeout: 10000,
-    withCredentials: true  // 关键：携带 Cookie，支持 Session
+    withCredentials: true
 })
 
 request.interceptors.response.use(
@@ -12,7 +12,7 @@ request.interceptors.response.use(
     },
     error => {
         if (error.response && error.response.status === 401) {
-            console.error('登录已过期，请重新登录')
+            console.error('登录已过期')
         }
         return Promise.reject(error)
     }

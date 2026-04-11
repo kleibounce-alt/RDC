@@ -21,6 +21,7 @@
       :good-id="currentGoodId"
       @go-back="currentPage = 'home'"
       @buy-success="handleBuySuccess"
+      @go-user-center="currentPage = 'user'"
   />
   <Publish
       v-else-if="currentPage === 'publish'"
@@ -32,6 +33,7 @@
       @go-home="currentPage = 'home'"
       @logout="handleLogout"
       @view-good="goDetail"
+      @go-publish="currentPage = 'publish'"
   />
 </template>
 
@@ -66,8 +68,9 @@ const goDetail = (id) => {
 
 const handleBuySuccess = (order) => {
   console.log('购买成功，订单信息：', order)
+  // 购买成功后跳转到个人中心查看订单
   setTimeout(() => {
-    currentPage.value = 'home'
+    currentPage.value = 'user'
   }, 2000)
 }
 </script>

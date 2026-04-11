@@ -9,10 +9,11 @@ import com.klei.goodfish.entity.User;
 import com.klei.goodfish.mapper.GoodMapper;
 import com.klei.goodfish.mapper.OrderMapper;
 import com.klei.goodfish.mapper.UserMapper;
+import com.klei.goodfish.mapper.WalletLogMapper;
 import com.klei.goodfish.mappercore.proxy.MapperProxy;
 import com.klei.goodfish.service.OrderService;
-import com.klei.goodfish.service.WalletService;
 import com.klei.goodfish.util.BusinessException;
+import com.klei.goodfish.util.DBUtil;
 import com.klei.goodfish.vo.OrderVO;
 
 import java.math.BigDecimal;
@@ -24,7 +25,7 @@ public class OrderServiceImpl implements OrderService {
     private OrderMapper orderMapper = MapperProxy.getMapper(OrderMapper.class);
     private GoodMapper goodMapper = MapperProxy.getMapper(GoodMapper.class);
     private UserMapper userMapper = MapperProxy.getMapper(UserMapper.class);
-    private WalletService walletService = new WalletServiceImpl();
+    private WalletLogMapper walletLogMapper = MapperProxy.getMapper(WalletLogMapper.class);
 
     @Override
     public Order createOrder(OrderCreateDTO dto) {
@@ -41,42 +42,67 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(400, "不能购买自己的商品");
         }
 
-        // 检查商品是否已售出
-        if ("已出售".equals(good.getSellingStatus())) {
-            throw new BusinessException(400, "商品已售出");
+        try {
+            // 关键修复：开启事务
+            DBUtil.beginTransaction();
+
+            // 1. 原子性占用商品（防止并发重复购买）
+            int updatedRows = goodMapper.markAsSold(dto.getGoodId());
+            if (updatedRows == 0) {
+                throw new BusinessException(400, "商品已被其他买家购买，请选择其他商品");
+            }
+
+            // 2. 检查余额（在事务内查询，确保数据一致性）
+            User buyer = userMapper.findById(dto.getBuyerId());
+            System.out.println("[Order] 买家ID: " + dto.getBuyerId() + ", 当前余额: " + buyer.getWallet() + ", 商品价格: " + good.getGoodPrice());
+
+            if (buyer.getWallet().compareTo(good.getGoodPrice()) < 0) {
+                throw new BusinessException(400, "余额不足，当前余额：" + buyer.getWallet() + "，需要：" + good.getGoodPrice());
+            }
+
+            // 3. 买家扣款（平扣台托管）- 直接在事务内操作，不调用外部Service避免连接不一致
+            BigDecimal before = buyer.getWallet();
+            BigDecimal after = before.subtract(good.getGoodPrice());
+            userMapper.updateWallet(after, dto.getBuyerId());
+
+            // 记录流水（type=2 购买，金额为负数表示支出）
+            walletLogMapper.insert(dto.getBuyerId(),
+                    good.getGoodPrice().negate(),
+                    before,
+                    after,
+                    2,
+                    null);
+            System.out.println("[Order] 扣款成功: " + good.getGoodPrice());
+
+            // 4. 创建订单
+            orderMapper.insert(dto.getGoodId(), dto.getBuyerId(), good.getSellerId(), good.getGoodPrice());
+            System.out.println("[Order] 订单创建成功");
+
+            // 5. 查询刚创建的订单
+            Order newOrder = orderMapper.findByGoodId(dto.getGoodId());
+
+            if (newOrder == null) {
+                throw new BusinessException(500, "订单创建后查询失败");
+            }
+
+            // 提交事务（关键修复）
+            DBUtil.commit();
+            System.out.println("[Order] 事务提交成功，订单创建完成");
+
+            return newOrder;
+
+        } catch (BusinessException e) {
+            // 业务异常，回滚事务
+            DBUtil.rollback();
+            System.err.println("[Order] 业务异常，事务回滚: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // 系统异常，回滚事务
+            DBUtil.rollback();
+            System.err.println("[Order] 系统异常，事务回滚: " + e.getMessage());
+            e.printStackTrace();
+            throw new BusinessException(500, "创建订单失败：" + e.getMessage());
         }
-
-        // 检查是否已有未取消的订单
-        Order existOrder = orderMapper.findByGoodId(dto.getGoodId());
-        if (existOrder != null) {
-            throw new BusinessException(400, "商品已被他人下单，请刷新重试");
-        }
-
-        // 买家扣款
-        WalletPayDTO payDTO = new WalletPayDTO();
-        payDTO.setUserId(dto.getBuyerId());
-        payDTO.setAmount(good.getGoodPrice());
-        payDTO.setRelatedId(null);
-        payDTO.setRemark("购买商品：" + good.getGoodName());
-
-        boolean paySuccess = walletService.pay(payDTO);
-        if (!paySuccess) {
-            throw new BusinessException(500, "支付失败");
-        }
-
-        // 创建订单
-        orderMapper.insert(dto.getGoodId(), dto.getBuyerId(), good.getSellerId(), good.getGoodPrice());
-
-        // 查询刚创建的订单
-        Order newOrder = orderMapper.findByGoodId(dto.getGoodId());
-        if (newOrder == null) {
-            throw new BusinessException(500, "订单创建失败");
-        }
-
-        // 改商品状态为"已出售"
-        goodMapper.updateSellingStatus("已出售", dto.getGoodId());
-
-        return newOrder;
     }
 
     @Override
@@ -90,7 +116,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(404, "订单不存在");
         }
 
-        // 只有卖家能确认订单（或买家确认收货，这里简化只有卖家确认）
+        // 只有卖家能确认订单
         if (!order.getSellerId().equals(dto.getUserId())) {
             throw new BusinessException(403, "无权确认此订单");
         }
@@ -100,13 +126,50 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(400, "订单状态异常，无法确认");
         }
 
-        // 给卖家打钱
-        walletService.income(order.getSellerId(), order.getPrice(), order.getId(), "出售商品收入");
+        try {
+            // 关键修复：开启事务
+            DBUtil.beginTransaction();
 
-        // 更新订单状态为已完成
-        orderMapper.updateStatus(1, dto.getOrderId());
+            System.out.println("[Order] 确认订单，给卖家打款: sellerId=" + order.getSellerId() + ", amount=" + order.getPrice());
 
-        return true;
+            // 1. 给卖家打款（直接在事务内操作）
+            User seller = userMapper.findById(order.getSellerId());
+            if (seller == null) {
+                throw new BusinessException(404, "卖家不存在");
+            }
+
+            BigDecimal sellerBefore = seller.getWallet();
+            BigDecimal sellerAfter = sellerBefore.add(order.getPrice());
+            userMapper.updateWallet(sellerAfter, order.getSellerId());
+
+            // 记录收入流水（type=3 收入）
+            walletLogMapper.insert(order.getSellerId(),
+                    order.getPrice(),
+                    sellerBefore,
+                    sellerAfter,
+                    3,
+                    order.getId());
+            System.out.println("[Order] 打款成功");
+
+            // 2. 更新订单状态为已完成（1）- 必须在同一个事务中！
+            orderMapper.updateStatus(1, dto.getOrderId());
+            System.out.println("[Order] 订单状态更新为已完成");
+
+            // 提交事务（关键修复：确保打款和状态更新同时成功或同时失败）
+            DBUtil.commit();
+            System.out.println("[Order] 事务提交成功，订单确认完成");
+
+            return true;
+
+        } catch (BusinessException e) {
+            DBUtil.rollback();
+            System.err.println("[Order] 业务异常，事务回滚: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            DBUtil.rollback();
+            System.err.println("[Order] 系统异常，事务回滚: " + e.getMessage());
+            throw new BusinessException(500, "确认订单失败：" + e.getMessage());
+        }
     }
 
     @Override
@@ -130,19 +193,44 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(400, "订单已确认或已取消，无法操作");
         }
 
-        // 退款给买家
-        User buyer = userMapper.findById(order.getBuyerId());
-        BigDecimal before = buyer.getWallet();
-        BigDecimal after = before.add(order.getPrice());
-        userMapper.updateWallet(after, order.getBuyerId());
+        try {
+            // 关键修复：开启事务
+            DBUtil.beginTransaction();
 
-        // 商品状态改回"未出售"
-        goodMapper.updateSellingStatus("未出售", order.getGoodId());
+            // 1. 退款给买家
+            User buyer = userMapper.findById(order.getBuyerId());
+            BigDecimal before = buyer.getWallet();
+            BigDecimal after = before.add(order.getPrice());
+            userMapper.updateWallet(after, order.getBuyerId());
 
-        // 更新订单状态为已取消
-        orderMapper.updateStatus(2, dto.getOrderId());
+            // 记录退款流水（type=1 充值，表示余额增加）
+            walletLogMapper.insert(order.getBuyerId(),
+                    order.getPrice(),
+                    before,
+                    after,
+                    1,
+                    order.getId());
+            System.out.println("[Order] 退款给买家: " + order.getBuyerId() + ", 金额: " + order.getPrice());
 
-        return true;
+            // 2. 恢复商品状态为未出售
+            goodMapper.markAsAvailable(order.getGoodId());
+            System.out.println("[Order] 商品状态恢复为未出售");
+
+            // 3. 更新订单状态为已取消（2）
+            orderMapper.updateStatus(2, dto.getOrderId());
+            System.out.println("[Order] 订单状态更新为已取消");
+
+            // 提交事务
+            DBUtil.commit();
+            System.out.println("[Order] 事务提交成功，订单取消完成");
+
+            return true;
+
+        } catch (Exception e) {
+            DBUtil.rollback();
+            System.err.println("[Order] 取消订单异常，事务回滚: " + e.getMessage());
+            throw new BusinessException(500, "取消订单失败：" + e.getMessage());
+        }
     }
 
     @Override

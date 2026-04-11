@@ -31,7 +31,7 @@ public interface OrderMapper {
     @Update("UPDATE `order` SET status = ? WHERE id = ?")
     void updateStatus(Integer status, Integer orderId);
 
-    // 根据商品ID查订单
-    @Select("SELECT * FROM `order` WHERE good_id = ? AND status != 2")
+    // 根据商品ID查订单（关键修复：添加ORDER BY确保返回最新）
+    @Select("SELECT * FROM `order` WHERE good_id = ? AND status != 2 ORDER BY create_time DESC, id DESC LIMIT 1")
     Order findByGoodId(Integer goodId);
 }

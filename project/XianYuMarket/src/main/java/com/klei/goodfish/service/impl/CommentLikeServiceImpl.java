@@ -15,9 +15,6 @@ import com.klei.goodfish.vo.LikeStatusVO;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author klei
- */
 public class CommentLikeServiceImpl implements CommentLikeService {
 
     private CommentLikeMapper likeMapper = MapperProxy.getMapper(CommentLikeMapper.class);

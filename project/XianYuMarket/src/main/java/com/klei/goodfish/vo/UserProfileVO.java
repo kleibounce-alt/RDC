@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class UserProfileVO {
     private Integer userId;
     private String userName;
+    private String avatar;  // 新增：头像字段
     private Integer role;
     private Integer status;
     private BigDecimal wallet;

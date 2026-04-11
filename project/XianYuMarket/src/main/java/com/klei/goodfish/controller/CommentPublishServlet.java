@@ -18,12 +18,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-/**
- * 发表评论（需登录）
- * POST /comment/publish
- * Body: {"goodId":1, "content":"这个商品很不错！"}
- * @author klei
- */
 @WebServlet("/comment/publish")
 public class CommentPublishServlet extends HttpServlet {
 
@@ -42,6 +36,12 @@ public class CommentPublishServlet extends HttpServlet {
             HttpSession session = req.getSession();
             Integer userId = (Integer) session.getAttribute("userId");
 
+            if (userId == null) {
+                resp.setStatus(401);
+                out.print(ResultUtil.fail(401, "请先登录").toJson());
+                return;
+            }
+
             StringBuilder sb = new StringBuilder();
             BufferedReader reader = req.getReader();
             String line;
@@ -49,19 +49,28 @@ public class CommentPublishServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            CommentPublishDTO dto = gson.fromJson(sb.toString(), CommentPublishDTO.class);
+            String requestBody = sb.toString();
+            System.out.println("[CommentPublish] 收到请求体: " + requestBody);
+
+            CommentPublishDTO dto = gson.fromJson(requestBody, CommentPublishDTO.class);
             dto.setUserId(userId);
+
+            System.out.println("[CommentPublish] 发布评论，goodId=" + dto.getGoodId() + ", userId=" + userId);
 
             CommentVO vo = commentService.publishComment(dto);
 
+            System.out.println("[CommentPublish] 发布成功，评论ID: " + (vo != null ? vo.getCommentId() : "null"));
             out.print(ResultUtil.success("评论成功", vo).toJson());
 
         } catch (BusinessException e) {
+            System.err.println("[CommentPublish] 业务异常: " + e.getMessage());
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            System.err.println("[CommentPublish] 系统异常: " + e.getMessage());
+            e.printStackTrace();
             resp.setStatus(500);
-            out.print(ResultUtil.fail(500, "评论失败：" + e.getMessage()).toJson());
+            out.print(ResultUtil.fail(500, "评论失败: " + e.getMessage()).toJson());
         }
     }
 
@@ -70,6 +79,6 @@ public class CommentPublishServlet extends HttpServlet {
             throws ServletException, IOException {
         resp.setContentType("application/json;charset=UTF-8");
         resp.setStatus(405);
-        resp.getWriter().print(ResultUtil.fail(405, "请使用 POST 方法").toJson());
+        resp.getWriter().print(ResultUtil.fail(405, "请使用POST方法").toJson());
     }
 }

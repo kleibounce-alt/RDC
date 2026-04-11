@@ -12,10 +12,11 @@ public class DBUtil {
     private static String username;
     private static String password;
 
-    // 静态块：类加载时执行一次，加载驱动
+    // 线程本地存储，用于事务管理（关键修复）
+    private static ThreadLocal<Connection> threadLocalConn = new ThreadLocal<>();
+
     static {
         try {
-            // 读配置文件
             InputStream is = DBUtil.class.getClassLoader()
                     .getResourceAsStream("jdbc.properties");
             Properties prop = new Properties();
@@ -26,26 +27,71 @@ public class DBUtil {
             password = prop.getProperty("jdbc.password");
             String driver = prop.getProperty("jdbc.driver");
 
-            // 注册驱动（MySQL 8 用 com.mysql.cj.jdbc.Driver）
             Class.forName(driver);
         } catch (Exception e) {
             throw new RuntimeException("数据库配置加载失败", e);
         }
     }
 
-    // 获取连接
+    // 获取连接（支持事务）
     public static Connection getConnection() throws SQLException {
+        Connection conn = threadLocalConn.get();
+        if (conn != null && !conn.isClosed()) {
+            return conn;
+        }
         return DriverManager.getConnection(url, username, password);
     }
 
-    // 关闭资源（查操作用：关 ResultSet, Statement, Connection）
+    // 开启事务（关键修复）
+    public static void beginTransaction() throws SQLException {
+        Connection conn = DriverManager.getConnection(url, username, password);
+        conn.setAutoCommit(false);
+        threadLocalConn.set(conn);
+    }
+
+    // 提交事务
+    public static void commit() throws SQLException {
+        Connection conn = threadLocalConn.get();
+        if (conn != null) {
+            conn.commit();
+            conn.close();
+            threadLocalConn.remove();
+        }
+    }
+
+    // 回滚事务
+    public static void rollback() {
+        Connection conn = threadLocalConn.get();
+        if (conn != null) {
+            try {
+                conn.rollback();
+                conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                threadLocalConn.remove();
+            }
+        }
+    }
+
+    // 是否处于事务中
+    public static boolean isInTransaction() {
+        try {
+            Connection conn = threadLocalConn.get();
+            return conn != null && !conn.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     public static void close(ResultSet rs, Statement stmt, Connection conn) {
         try { if (rs != null) {rs.close();} } catch (Exception e) {}
         try { if (stmt != null) {stmt.close();} } catch (Exception e) {}
-        try { if (conn != null) {conn.close();} } catch (Exception e) {}
+        if (!isInTransaction()) {
+            try { if (conn != null) {conn.close();} } catch (Exception e) {}
+        }
     }
 
-    // 关闭资源（增删改用：只关 Statement, Connection）
     public static void close(Statement stmt, Connection conn) {
         close(null, stmt, conn);
     }

@@ -23,9 +23,9 @@ public interface OrderService {
     // 查询订单详情
     OrderVO getOrderDetail(Integer orderId);
 
-    // 查询我的购买记录
+    // 关键：查询我购买的订单（买家视角）
     List<OrderVO> getMyPurchases(Integer buyerId);
 
-    // 查询我的销售记录
+    // 关键：查询我出售的订单（卖家视角）
     List<OrderVO> getMySales(Integer sellerId);
 }

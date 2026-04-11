@@ -39,8 +39,23 @@ public class FollowAddServlet extends HttpServlet {
 
         try {
             // 从 Session 获取当前登录用户ID（关注者）
-            HttpSession session = req.getSession();
+            HttpSession session = req.getSession(false);
+            if (session == null) {
+                System.err.println("[FollowAdd] Session is null");
+                resp.setStatus(401);
+                out.print(ResultUtil.fail(401, "请先登录").toJson());
+                return;
+            }
+
             Integer followerId = (Integer) session.getAttribute("userId");
+            if (followerId == null) {
+                System.err.println("[FollowAdd] userId in session is null");
+                resp.setStatus(401);
+                out.print(ResultUtil.fail(401, "请先登录").toJson());
+                return;
+            }
+
+            System.out.println("[FollowAdd] Current userId from session: " + followerId);
 
             // 读取 JSON
             StringBuilder sb = new StringBuilder();
@@ -50,9 +65,27 @@ public class FollowAddServlet extends HttpServlet {
                 sb.append(line);
             }
 
-            // 转 DTO
-            FollowAddDTO dto = gson.fromJson(sb.toString(), FollowAddDTO.class);
+            String jsonBody = sb.toString();
+            System.out.println("[FollowAdd] Request body: " + jsonBody);
+
+            // 转DTO
+            FollowAddDTO dto = gson.fromJson(jsonBody, FollowAddDTO.class);
             dto.setFollowerId(followerId); // 安全处理：以 Session 为准
+
+            System.out.println("[FollowAdd] DTO: followerId=" + dto.getFollowerId() + ", followingId=" + dto.getFollowingId());
+
+            // 参数校验
+            if (dto.getFollowingId() == null) {
+                resp.setStatus(400);
+                out.print(ResultUtil.fail(400, "被关注者ID不能为空").toJson());
+                return;
+            }
+
+            if (dto.getFollowerId().equals(dto.getFollowingId())) {
+                resp.setStatus(400);
+                out.print(ResultUtil.fail(400, "不能关注自己").toJson());
+                return;
+            }
 
             // 调用 Service
             boolean success = followService.follow(dto);
@@ -65,11 +98,14 @@ public class FollowAddServlet extends HttpServlet {
             }
 
         } catch (BusinessException e) {
+            System.err.println("[FollowAdd] BusinessException: " + e.getMessage());
             resp.setStatus(e.getCode());
             out.print(ResultUtil.fail(e.getCode(), e.getMessage()).toJson());
         } catch (Exception e) {
+            System.err.println("[FollowAdd] Exception: " + e.getMessage());
+            e.printStackTrace();
             resp.setStatus(500);
-            out.print(ResultUtil.fail(500, "关注失败：" + e.getMessage()).toJson());
+            out.print(ResultUtil.fail(500, "系统错误: " + e.getMessage()).toJson());
         }
     }
 

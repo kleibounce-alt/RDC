@@ -9,7 +9,7 @@ export function getRandomGoods(limit = 8) {
     })
 }
 
-// 发布商品
+// 发布商品（带标签）
 export function publishGood(data) {
     return request({
         url: '/good/publish',
@@ -18,7 +18,8 @@ export function publishGood(data) {
             goodName: data.goodName,
             image: data.image,
             price: data.price,
-            description: data.description
+            description: data.description,
+            tagIds: data.tagIds  // 新增：标签ID数组
         }
     })
 }
@@ -41,12 +42,38 @@ export function searchGoods(keyword) {
     })
 }
 
-// ★★★ 新增的删除商品方法 ★★★
+// 删除商品
 export function deleteGood(goodId) {
     return request({
         url: '/good/delete',
         method: 'post',
         data: { goodId }
+    })
+}
+
+// 获取我发布的商品（UserCenter.vue 需要的）
+export function getMyGoods() {
+    return request({
+        url: '/user/good',
+        method: 'get'
+    })
+}
+
+// 根据标签查询商品
+export function getGoodsByTag(tagId) {
+    return request({
+        url: '/good/tag',
+        method: 'get',
+        params: { tagId }
+    })
+}
+
+// 获取商品的标签列表（可选，用于编辑时回显）
+export function getGoodTags(goodId) {
+    return request({
+        url: '/good/tags',
+        method: 'get',
+        params: { goodId }
     })
 }
 

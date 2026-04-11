@@ -6,9 +6,6 @@ import com.klei.goodfish.mappercore.Select;
 import com.klei.goodfish.mappercore.Update;
 import java.util.List;
 
-/**
- * @author klei
- */
 public interface CommentMapper {
 
     // 插入评论
@@ -16,12 +13,14 @@ public interface CommentMapper {
             "VALUES(?, ?, ?, 1, NOW())")
     void insert(Integer goodId, Integer userId, String content);
 
-    // 根据ID查询
-    @Select("SELECT * FROM comment WHERE id = ? AND status = 1")
+    // 根据ID查询 - 使用别名确保映射正确
+    @Select("SELECT id, good_id as goodId, user_id as userId, content, status, create_time as createTime " +
+            "FROM comment WHERE id = ? AND status = 1")
     Comment findById(Integer id);
 
-    // 根据商品ID查所有评论
-    @Select("SELECT * FROM comment WHERE good_id = ? AND status = 1 ORDER BY create_time DESC")
+    // 根据商品ID查所有评论 - 关键修复：使用别名确保驼峰映射
+    @Select("SELECT id, good_id as goodId, user_id as userId, content, status, create_time as createTime " +
+            "FROM comment WHERE good_id = ? AND status = 1 ORDER BY create_time DESC")
     List<Comment> findByGoodId(Integer goodId);
 
     // 删除评论
